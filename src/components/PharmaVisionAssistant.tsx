@@ -45,8 +45,15 @@ const PharmaVisionAssistant = () => {
     setInput('');
     setIsLoading(true);
 
+    const apiKey = process.env.GEMINI_API_KEY2;
+    if (!apiKey) {
+      toast.error("Gemini API Key is missing. Please check your environment variables.");
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const ai = new GoogleGenAI({ apiKey });
       const model = "gemini-3-flash-preview";
       
       const context = `

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Package, 
@@ -48,7 +49,6 @@ import PharmacyInsightsView from './components/PharmacyInsightsView';
 import ReportsView from './components/ReportsView';
 import DecisionEngineView from './components/DecisionEngineView';
 import SmartAlertsView from './components/SmartAlertsView';
-import ComingSoonView from './components/ComingSoonView';
 import PharmaVisionAssistant from './components/PharmaVisionAssistant';
 import CompetitorsView from './components/CompetitorsView';
 import SimulationsView from './components/SimulationsView';
@@ -62,7 +62,12 @@ import { Toaster, toast } from 'sonner';
 
 export default function App() {
   const { t, i18n } = useTranslation();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Derive activeTab from location.pathname
+  const activeTab = location.pathname.split('/')[1] || 'dashboard';
+
   const [analysis, setAnalysis] = useState<MarketAnalysis | null>(null);
   const [loadingAnalysis, setLoadingAnalysis] = useState(true);
   const [showAssistant, setShowAssistant] = useState(false);
@@ -80,7 +85,7 @@ export default function App() {
   const [bubbleInput, setBubbleInput] = useState('');
   const [isBubbleLoading, setIsBubbleLoading] = useState(false);
   const [userProfile, setUserProfile] = useState({
-    name: 'asmaa saied',
+    name: 'Dr. Ahmed Hassan',
     title: 'Chief Strategist',
     email: 'sooo1421997@gmail.com',
     avatar: 'https://picsum.photos/seed/strategist/200/200'
@@ -88,53 +93,36 @@ export default function App() {
 
   const isRtl = i18n.language === 'ar';
 
-  const handleBubbleSend = async () => {
-  if (!bubbleInput.trim() || isBubbleLoading) return;
+  const handleSidebarClick = (tab: string) => {
+    navigate(`/${tab}`);
+    setIsSidebarOpen(false);
+  };
 
-  if (!import.meta.env.VITE_GEMINI_API_KEY) {
-    toast.error("API key missing");
-    return;
-  }
+  useEffect(() => {
+    document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
+    document.documentElement.lang = i18n.language;
+  }, [isRtl, i18n.language]);
 
-  const userMsg = { role: "user", content: bubbleInput };
-  setBubbleMessages(prev => [...prev, userMsg]);
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
 
-  const currentInput = bubbleInput;
-  setBubbleInput('');
-  setIsBubbleLoading(true);
-
-  try {
-    const ai = new GoogleGenAI({
-      apiKey: import.meta.env.VITE_GEMINI_API_KEY
-    });
-
-    const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: currentInput }]
-        }
-      ]
-    });
-
-    const text = response.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
-
-    const assistantMsg = {
-      role: "assistant",
-      content: text
+  useEffect(() => {
+    const fetchAnalysis = async () => {
+      setLoadingAnalysis(true);
+      const res = await getDetailedAnalysis({ 
+        products: MOCK_PRODUCTS, 
+        regions: MOCK_REGIONS,
+        pharmacies: MOCK_PHARMACIES,
+        competitors: COMPETITOR_DATA
+      });
+      setAnalysis(res);
+      setLoadingAnalysis(false);
     };
-
-    setBubbleMessages(prev => [...prev, assistantMsg]);
-
-  } catch (error) {
-    console.error("AI Error:", error);
-    toast.error("AI Error");
-  } finally {
-    setIsBubbleLoading(false);
-  }
-}; 
-
     fetchAnalysis();
   }, []);
 
@@ -161,47 +149,44 @@ export default function App() {
   const toggleLanguage = () => {
     const nextLang = i18n.language === 'en' ? 'ar' : 'en';
     i18n.changeLanguage(nextLang);
-  };const handleBubbleSend = async () => {
-  if (!bubbleInput.trim() || isBubbleLoading) return;
+  };
 
-  if (!import.meta.env.VITE_GEMINI_API_KEY) {
-    toast.error("API Key missing");
-    return;
-  }
+  const handleBubbleSend = async () => {
+    if (!bubbleInput.trim() || isBubbleLoading) return;
 
-  const userMsg = { role: 'user', content: bubbleInput };
-  setBubbleMessages(prev => [...prev, userMsg]);
+    const userMsg = { role: 'user', content: bubbleInput };
+    setBubbleMessages(prev => [...prev, userMsg]);
+    const currentInput = bubbleInput;
+    setBubbleInput('');
+    setIsBubbleLoading(true);
 
-  const currentInput = bubbleInput;
-  setBubbleInput('');
-  setIsBubbleLoading(true);
+    const apiKey = process.env.GEMINI_API_KEY2;
+    if (!apiKey) {
+      toast.error("Gemini API Key is missing. Please check your environment variables.");
+      setIsBubbleLoading(false);
+      return;
+    }
 
-  try {
-    const ai = new GoogleGenAI({
-      apiKey: import.meta.env.VITE_GEMINI_API_KEY
-    });
-
-    const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
-      contents: currentInput
-    });
-
-    const assistantMsg = {
-      role: 'assistant',
-      content: response.text || "No response"
-    };
-
-    setBubbleMessages(prev => [...prev, assistantMsg]);
-
-  } catch (error) {
-    console.error(error);
-    toast.error("AI Error");
-  } finally {
-    setIsBubbleLoading(false);
-  }
-};
-
-  
+    try {
+      const ai = new GoogleGenAI({ apiKey });
+      const model = "gemini-3-flash-preview";
+      const response = await ai.models.generateContent({
+        model,
+        contents: currentInput,
+        config: {
+          systemInstruction: "You are PharmaVision AI, a strategic pharmaceutical assistant. Provide concise, actionable insights based on market data.",
+        }
+      });
+      
+      const assistantMsg = { role: 'assistant', content: response.text || "I'm sorry, I couldn't process that." };
+      setBubbleMessages(prev => [...prev, assistantMsg]);
+    } catch (error) {
+      console.error("Bubble AI Error:", error);
+      setBubbleMessages(prev => [...prev, { role: 'assistant', content: "I'm having trouble connecting. Please try again." }]);
+    } finally {
+      setIsBubbleLoading(false);
+    }
+  };
 
   return (
     <div className={cn(
@@ -315,7 +300,7 @@ export default function App() {
 
             <div className="flex items-center gap-2">
               <button 
-                onClick={() => setActiveTab('settings')}
+                onClick={() => navigate('/settings')}
                 className={cn(
                   "p-2 rounded-lg transition-colors",
                   activeTab === 'settings' 
@@ -343,7 +328,7 @@ export default function App() {
             </div>
             
             <button 
-              onClick={() => setActiveTab('alerts')}
+              onClick={() => navigate('/alerts')}
               className="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg relative transition-colors"
             >
               <Bell size={20} />
@@ -356,7 +341,7 @@ export default function App() {
 
             <div className="h-8 w-px bg-slate-200 dark:bg-slate-800" />
             
-            <div className="flex items-center gap-3 group cursor-pointer" onClick={() => setActiveTab('settings')}>
+            <div className="flex items-center gap-3 group cursor-pointer" onClick={() => navigate('/settings')}>
               <div className="text-right">
                 <p className="text-sm font-bold group-hover:text-blue-600 transition-colors dark:text-white">{userProfile.name}</p>
                 <p className="text-[10px] text-slate-400 font-bold uppercase">{userProfile.title}</p>
@@ -428,7 +413,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* View Content */}
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -437,160 +421,164 @@ export default function App() {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
               >
-                {activeTab === 'dashboard' && <DashboardView analysis={analysis} loading={loadingAnalysis} t={t} alerts={alerts} />}
-                {activeTab === 'sales' && (
-                  <SalesAnalysisView 
-                    t={t} 
-                    analysis={analysis} 
-                    loading={loadingAnalysis} 
-                    onRefresh={() => {
-                      const fetchAnalysis = async () => {
-                        setLoadingAnalysis(true);
-                        const res = await getDetailedAnalysis({ 
-                          products: MOCK_PRODUCTS, 
-                          regions: MOCK_REGIONS,
-                          pharmacies: MOCK_PHARMACIES,
-                          competitors: COMPETITOR_DATA
-                        });
-                        setAnalysis(res);
-                        setLoadingAnalysis(false);
-                      };
-                      fetchAnalysis();
-                    }}
-                  />
-                )}
-                {activeTab === 'map' && (
-                  <MarketIntelligenceView 
-                    t={t} 
-                    analysis={analysis} 
-                    loading={loadingAnalysis} 
-                    onRefresh={() => {
-                      const fetchAnalysis = async () => {
-                        setLoadingAnalysis(true);
-                        const res = await getDetailedAnalysis({ 
-                          products: MOCK_PRODUCTS, 
-                          regions: MOCK_REGIONS,
-                          pharmacies: MOCK_PHARMACIES,
-                          competitors: COMPETITOR_DATA
-                        });
-                        setAnalysis(res);
-                        setLoadingAnalysis(false);
-                      };
-                      fetchAnalysis();
-                    }}
-                  />
-                )}
-                {activeTab === 'inventory-mgmt' && (
-                  <InventoryManagementView 
-                    t={t} 
-                    threshold={inventoryThreshold} 
-                    onThresholdChange={setInventoryThreshold} 
-                  />
-                )}
-                {activeTab === 'inventory' && (
-                  <DemandForecastingView 
-                    t={t} 
-                    analysis={analysis} 
-                    loading={loadingAnalysis} 
-                    onRefresh={() => {
-                      const fetchAnalysis = async () => {
-                        setLoadingAnalysis(true);
-                        const res = await getDetailedAnalysis({ 
-                          products: MOCK_PRODUCTS, 
-                          regions: MOCK_REGIONS,
-                          pharmacies: MOCK_PHARMACIES,
-                          competitors: COMPETITOR_DATA
-                        });
-                        setAnalysis(res);
-                        setLoadingAnalysis(false);
-                      };
-                      fetchAnalysis();
-                    }}
-                  />
-                )}
-                {activeTab === 'reps' && (
-                  <RepsPerformanceView 
-                    t={t} 
-                    analysis={analysis} 
-                    loading={loadingAnalysis} 
-                    onRefresh={() => {
-                      const fetchAnalysis = async () => {
-                        setLoadingAnalysis(true);
-                        const res = await getDetailedAnalysis({ 
-                          products: MOCK_PRODUCTS, 
-                          regions: MOCK_REGIONS,
-                          pharmacies: MOCK_PHARMACIES,
-                          competitors: COMPETITOR_DATA
-                        });
-                        setAnalysis(res);
-                        setLoadingAnalysis(false);
-                      };
-                      fetchAnalysis();
-                    }}
-                  />
-                )}
-                {activeTab === 'pharmacy' && (
-                  <PharmacyInsightsView 
-                    t={t} 
-                    analysis={analysis} 
-                    loading={loadingAnalysis} 
-                    onRefresh={() => {
-                      const fetchAnalysis = async () => {
-                        setLoadingAnalysis(true);
-                        const res = await getDetailedAnalysis({ 
-                          products: MOCK_PRODUCTS, 
-                          regions: MOCK_REGIONS,
-                          pharmacies: MOCK_PHARMACIES,
-                          competitors: COMPETITOR_DATA
-                        });
-                        setAnalysis(res);
-                        setLoadingAnalysis(false);
-                      };
-                      fetchAnalysis();
-                    }}
-                  />
-                )}
-                {activeTab === 'decisions' && (
-                  <DecisionEngineView 
-                    t={t} 
-                    analysis={analysis} 
-                    loading={loadingAnalysis} 
-                    onRefresh={() => {
-                      const fetchAnalysis = async () => {
-                        setLoadingAnalysis(true);
-                        const res = await getDetailedAnalysis({ 
-                          products: MOCK_PRODUCTS, 
-                          regions: MOCK_REGIONS,
-                          pharmacies: MOCK_PHARMACIES,
-                          competitors: COMPETITOR_DATA
-                        });
-                        setAnalysis(res);
-                        setLoadingAnalysis(false);
-                      };
-                      fetchAnalysis();
-                    }}
-                  />
-                )}
-                {activeTab === 'alerts' && <SmartAlertsView t={t} alerts={alerts} />}
-                {activeTab === 'assistant' && <PharmaVisionAssistant />}
-                {activeTab === 'competitors' && <CompetitorsView t={t} />}
-                {activeTab === 'simulations' && <SimulationsView t={t} />}
-                {activeTab === 'reports' && <ReportsView t={t} />}
-                {activeTab === 'settings' && (
-                  <SettingsView 
-                    darkMode={darkMode} 
-                    setDarkMode={setDarkMode} 
-                    isRtl={isRtl} 
-                    userProfile={userProfile}
-                    setUserProfile={setUserProfile}
-                    pushEnabled={pushEnabled}
-                    setPushEnabled={setPushEnabled}
-                    emailEnabled={emailEnabled}
-                    setEmailEnabled={setEmailEnabled}
-                    twoFactorEnabled={twoFactorEnabled}
-                    setTwoFactorEnabled={setTwoFactorEnabled}
-                  />
-                )}
+                <Routes location={location}>
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/dashboard" element={<DashboardView analysis={analysis} loading={loadingAnalysis} t={t} alerts={alerts} />} />
+                  <Route path="/sales" element={
+                    <SalesAnalysisView 
+                      t={t} 
+                      analysis={analysis} 
+                      loading={loadingAnalysis} 
+                      onRefresh={() => {
+                        const fetchAnalysis = async () => {
+                          setLoadingAnalysis(true);
+                          const res = await getDetailedAnalysis({ 
+                            products: MOCK_PRODUCTS, 
+                            regions: MOCK_REGIONS,
+                            pharmacies: MOCK_PHARMACIES,
+                            competitors: COMPETITOR_DATA
+                          });
+                          setAnalysis(res);
+                          setLoadingAnalysis(false);
+                        };
+                        fetchAnalysis();
+                      }}
+                    />
+                  } />
+                  <Route path="/map" element={
+                    <MarketIntelligenceView 
+                      t={t} 
+                      analysis={analysis} 
+                      loading={loadingAnalysis} 
+                      onRefresh={() => {
+                        const fetchAnalysis = async () => {
+                          setLoadingAnalysis(true);
+                          const res = await getDetailedAnalysis({ 
+                            products: MOCK_PRODUCTS, 
+                            regions: MOCK_REGIONS,
+                            pharmacies: MOCK_PHARMACIES,
+                            competitors: COMPETITOR_DATA
+                          });
+                          setAnalysis(res);
+                          setLoadingAnalysis(false);
+                        };
+                        fetchAnalysis();
+                      }}
+                    />
+                  } />
+                  <Route path="/inventory-mgmt" element={
+                    <InventoryManagementView 
+                      t={t} 
+                      threshold={inventoryThreshold} 
+                      onThresholdChange={setInventoryThreshold} 
+                    />
+                  } />
+                  <Route path="/inventory" element={
+                    <DemandForecastingView 
+                      t={t} 
+                      analysis={analysis} 
+                      loading={loadingAnalysis} 
+                      onRefresh={() => {
+                        const fetchAnalysis = async () => {
+                          setLoadingAnalysis(true);
+                          const res = await getDetailedAnalysis({ 
+                            products: MOCK_PRODUCTS, 
+                            regions: MOCK_REGIONS,
+                            pharmacies: MOCK_PHARMACIES,
+                            competitors: COMPETITOR_DATA
+                          });
+                          setAnalysis(res);
+                          setLoadingAnalysis(false);
+                        };
+                        fetchAnalysis();
+                      }}
+                    />
+                  } />
+                  <Route path="/reps" element={
+                    <RepsPerformanceView 
+                      t={t} 
+                      analysis={analysis} 
+                      loading={loadingAnalysis} 
+                      onRefresh={() => {
+                        const fetchAnalysis = async () => {
+                          setLoadingAnalysis(true);
+                          const res = await getDetailedAnalysis({ 
+                            products: MOCK_PRODUCTS, 
+                            regions: MOCK_REGIONS,
+                            pharmacies: MOCK_PHARMACIES,
+                            competitors: COMPETITOR_DATA
+                          });
+                          setAnalysis(res);
+                          setLoadingAnalysis(false);
+                        };
+                        fetchAnalysis();
+                      }}
+                    />
+                  } />
+                  <Route path="/pharmacy" element={
+                    <PharmacyInsightsView 
+                      t={t} 
+                      analysis={analysis} 
+                      loading={loadingAnalysis} 
+                      onRefresh={() => {
+                        const fetchAnalysis = async () => {
+                          setLoadingAnalysis(true);
+                          const res = await getDetailedAnalysis({ 
+                            products: MOCK_PRODUCTS, 
+                            regions: MOCK_REGIONS,
+                            pharmacies: MOCK_PHARMACIES,
+                            competitors: COMPETITOR_DATA
+                          });
+                          setAnalysis(res);
+                          setLoadingAnalysis(false);
+                        };
+                        fetchAnalysis();
+                      }}
+                    />
+                  } />
+                  <Route path="/decisions" element={
+                    <DecisionEngineView 
+                      t={t} 
+                      analysis={analysis} 
+                      loading={loadingAnalysis} 
+                      onRefresh={() => {
+                        const fetchAnalysis = async () => {
+                          setLoadingAnalysis(true);
+                          const res = await getDetailedAnalysis({ 
+                            products: MOCK_PRODUCTS, 
+                            regions: MOCK_REGIONS,
+                            pharmacies: MOCK_PHARMACIES,
+                            competitors: COMPETITOR_DATA
+                          });
+                          setAnalysis(res);
+                          setLoadingAnalysis(false);
+                        };
+                        fetchAnalysis();
+                      }}
+                    />
+                  } />
+                  <Route path="/alerts" element={<SmartAlertsView t={t} alerts={alerts} />} />
+                  <Route path="/assistant" element={<PharmaVisionAssistant />} />
+                  <Route path="/competitors" element={<CompetitorsView t={t} />} />
+                  <Route path="/simulations" element={<SimulationsView t={t} />} />
+                  <Route path="/reports" element={<ReportsView t={t} />} />
+                  <Route path="/settings" element={
+                    <SettingsView 
+                      darkMode={darkMode} 
+                      setDarkMode={setDarkMode} 
+                      isRtl={isRtl} 
+                      userProfile={userProfile}
+                      setUserProfile={setUserProfile}
+                      pushEnabled={pushEnabled}
+                      setPushEnabled={setPushEnabled}
+                      emailEnabled={emailEnabled}
+                      setEmailEnabled={setEmailEnabled}
+                      twoFactorEnabled={twoFactorEnabled}
+                      setTwoFactorEnabled={setTwoFactorEnabled}
+                    />
+                  } />
+                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                </Routes>
               </motion.div>
             </AnimatePresence>
           </div>

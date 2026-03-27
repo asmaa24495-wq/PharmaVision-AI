@@ -1,5 +1,7 @@
 {
-  "name": "PharmaVision AI",
+  "name": "PharmaVision ",
   "description": "Smart pharmaceutical market analysis platform for data-driven decision making, sales tracking, and AI-powered demand forecasting.",
-  "requestFramePermissions": ["geolocation"]
+  "requestFramePermissions": [
+    "geolocation"
+  ]
 }

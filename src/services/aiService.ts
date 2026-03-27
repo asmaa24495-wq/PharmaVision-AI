@@ -1,7 +1,22 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { MarketAnalysis } from "../types";
+import { safeFetch } from "../lib/api";
+import { toast } from 'sonner';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY2 || "" });
+
+/**
+ * Example of a standard API call using the robust safeFetch utility.
+ * This handles network errors, non-200 responses, and timeouts.
+ */
+export async function fetchExternalMarketData(regionId: string) {
+  return await safeFetch<any>(`/api/market-data/${regionId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  });
+}
 
 export async function getDetailedAnalysis(data: any): Promise<MarketAnalysis> {
   const systemInstruction = `You are an advanced Pharmaceutical Market Analysis AI designed to help pharmaceutical companies make data-driven decisions.
@@ -20,6 +35,12 @@ Your وظيفتك:
 3. اكتشف مشاكل محتملة
 4. قدم 3 فرص نمو
 5. اقترح قرارات عملية واضحة`;
+
+  const apiKey = process.env.GEMINI_API_KEY2;
+  if (!apiKey) {
+    console.error("GEMINI_API_KEY2 is missing");
+    // Return fallback data but log error
+  }
 
   try {
     const response = await ai.models.generateContent({
@@ -55,6 +76,7 @@ Your وظيفتك:
     return JSON.parse(text);
   } catch (error) {
     console.error("AI Analysis Error:", error);
+    toast.error("AI Analysis failed. Using cached data.");
     return {
       overview: "تحليل أولي للسوق بناءً على البيانات المتوفرة. يظهر السوق نمواً مستقراً في قطاع المسكنات مع تحديات في سلاسل توريد المضادات الحيوية.",
       insights: [
