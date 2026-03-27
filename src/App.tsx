@@ -80,7 +80,7 @@ export default function App() {
   const [bubbleInput, setBubbleInput] = useState('');
   const [isBubbleLoading, setIsBubbleLoading] = useState(false);
   const [userProfile, setUserProfile] = useState({
-    name: 'Dr. Ahmed Hassan',
+    name: 'asmaa saied',
     title: 'Chief Strategist',
     email: 'sooo1421997@gmail.com',
     avatar: 'https://picsum.photos/seed/strategist/200/200'
@@ -88,36 +88,53 @@ export default function App() {
 
   const isRtl = i18n.language === 'ar';
 
-  const handleSidebarClick = (tab: string) => {
-    setActiveTab(tab);
-    setIsSidebarOpen(false);
-  };
+  const handleBubbleSend = async () => {
+  if (!bubbleInput.trim() || isBubbleLoading) return;
 
-  useEffect(() => {
-    document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
-    document.documentElement.lang = i18n.language;
-  }, [isRtl, i18n.language]);
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+    toast.error("API key missing");
+    return;
+  }
 
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
+  const userMsg = { role: "user", content: bubbleInput };
+  setBubbleMessages(prev => [...prev, userMsg]);
 
-  useEffect(() => {
-    const fetchAnalysis = async () => {
-      setLoadingAnalysis(true);
-      const res = await getDetailedAnalysis({ 
-        products: MOCK_PRODUCTS, 
-        regions: MOCK_REGIONS,
-        pharmacies: MOCK_PHARMACIES,
-        competitors: COMPETITOR_DATA
-      });
-      setAnalysis(res);
-      setLoadingAnalysis(false);
+  const currentInput = bubbleInput;
+  setBubbleInput('');
+  setIsBubbleLoading(true);
+
+  try {
+    const ai = new GoogleGenAI({
+      apiKey: import.meta.env.VITE_GEMINI_API_KEY
+    });
+
+    const response = await ai.models.generateContent({
+      model: "gemini-1.5-flash",
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: currentInput }]
+        }
+      ]
+    });
+
+    const text = response.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
+
+    const assistantMsg = {
+      role: "assistant",
+      content: text
     };
+
+    setBubbleMessages(prev => [...prev, assistantMsg]);
+
+  } catch (error) {
+    console.error("AI Error:", error);
+    toast.error("AI Error");
+  } finally {
+    setIsBubbleLoading(false);
+  }
+}; 
+
     fetchAnalysis();
   }, []);
 
