@@ -144,37 +144,47 @@ export default function App() {
   const toggleLanguage = () => {
     const nextLang = i18n.language === 'en' ? 'ar' : 'en';
     i18n.changeLanguage(nextLang);
-  };
+  };const handleBubbleSend = async () => {
+  if (!bubbleInput.trim() || isBubbleLoading) return;
 
-  const handleBubbleSend = async () => {
-    if (!bubbleInput.trim() || isBubbleLoading) return;
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
+    toast.error("API Key missing");
+    return;
+  }
 
-    const userMsg = { role: 'user', content: bubbleInput };
-    setBubbleMessages(prev => [...prev, userMsg]);
-    const currentInput = bubbleInput;
-    setBubbleInput('');
-    setIsBubbleLoading(true);
+  const userMsg = { role: 'user', content: bubbleInput };
+  setBubbleMessages(prev => [...prev, userMsg]);
 
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const model = "gemini-3-flash-preview";
-      const response = await ai.models.generateContent({
-        model,
-        contents: currentInput,
-        config: {
-          systemInstruction: "You are PharmaVision AI, a strategic pharmaceutical assistant. Provide concise, actionable insights based on market data.",
-        }
-      });
-      
-      const assistantMsg = { role: 'assistant', content: response.text || "I'm sorry, I couldn't process that." };
-      setBubbleMessages(prev => [...prev, assistantMsg]);
-    } catch (error) {
-      console.error("Bubble AI Error:", error);
-      setBubbleMessages(prev => [...prev, { role: 'assistant', content: "I'm having trouble connecting. Please try again." }]);
-    } finally {
-      setIsBubbleLoading(false);
-    }
-  };
+  const currentInput = bubbleInput;
+  setBubbleInput('');
+  setIsBubbleLoading(true);
+
+  try {
+    const ai = new GoogleGenAI({
+      apiKey: import.meta.env.VITE_GEMINI_API_KEY
+    });
+
+    const response = await ai.models.generateContent({
+      model: "gemini-1.5-flash",
+      contents: currentInput
+    });
+
+    const assistantMsg = {
+      role: 'assistant',
+      content: response.text || "No response"
+    };
+
+    setBubbleMessages(prev => [...prev, assistantMsg]);
+
+  } catch (error) {
+    console.error(error);
+    toast.error("AI Error");
+  } finally {
+    setIsBubbleLoading(false);
+  }
+};
+
+  
 
   return (
     <div className={cn(
