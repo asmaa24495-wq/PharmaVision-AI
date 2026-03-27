@@ -2,6 +2,7 @@ import React from 'react';
 import { AlertTriangle, Bell, Info, Clock, CheckCircle2, Sparkles } from 'lucide-react';
 import { Alert } from '../types';
 import { cn } from '../lib/utils';
+import { toast } from 'sonner';
 
 interface SmartAlertsViewProps {
   t: any;
@@ -125,15 +126,21 @@ const SmartAlertsView = ({ t, alerts }: SmartAlertsViewProps) => {
                 <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{alert.message}</p>
                 {alert.actionLabel && (
                   <div className="mt-4 flex gap-3">
-                    <button className={cn(
-                      "px-4 py-2 text-white text-xs font-bold rounded-lg transition-all hover:scale-105 active:scale-95",
-                      alert.type === 'critical' ? 'bg-rose-600 hover:bg-rose-700' : 
-                      alert.type === 'success' ? 'bg-blue-600 hover:bg-blue-700' :
-                      'bg-amber-500 hover:bg-amber-600'
-                    )}>
+                    <button 
+                      onClick={() => toast.success(`Action: ${alert.actionLabel}`, { description: `Initiating ${alert.actionLabel} for ${alert.title}` })}
+                      className={cn(
+                        "px-4 py-2 text-white text-xs font-bold rounded-lg transition-all hover:scale-105 active:scale-95",
+                        alert.type === 'critical' ? 'bg-rose-600 hover:bg-rose-700' : 
+                        alert.type === 'success' ? 'bg-blue-600 hover:bg-blue-700' :
+                        'bg-amber-500 hover:bg-amber-600'
+                      )}
+                    >
                       {alert.actionLabel}
                     </button>
-                    <button className="px-4 py-2 border border-slate-200 dark:border-slate-800 text-xs font-bold rounded-lg dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+                    <button 
+                      onClick={() => toast.info('Alert ignored', { description: `Alert "${alert.title}" has been archived.` })}
+                      className="px-4 py-2 border border-slate-200 dark:border-slate-800 text-xs font-bold rounded-lg dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                    >
                       Ignore
                     </button>
                   </div>

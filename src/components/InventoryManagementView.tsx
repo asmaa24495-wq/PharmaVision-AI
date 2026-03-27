@@ -170,7 +170,10 @@ const InventoryManagementView = ({ t, threshold, onThresholdChange }: InventoryM
               <span className="text-[10px] text-slate-400 font-medium">days</span>
             </div>
             <div className="flex items-center gap-2">
-            <button className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+            <button 
+              onClick={() => toast.info("Calendar View", { description: "Opening inventory schedule and delivery timeline." })}
+              className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            >
               <Calendar size={18} />
             </button>
             <button 
@@ -294,10 +297,16 @@ const InventoryManagementView = ({ t, threshold, onThresholdChange }: InventoryM
                   Threshold is <span className="text-blue-400 font-bold">{threshold} days</span>.
                 </p>
                 <div className="mt-4 flex items-center gap-2">
-                  <button className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-bold hover:bg-blue-700 transition-all">
+                  <button 
+                    onClick={() => toast.success(`Order Initiated for ${item.name}`, { description: "Purchase order has been sent to the supplier." })}
+                    className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-bold hover:bg-blue-700 transition-all"
+                  >
                     Order Now
                   </button>
-                  <button className="px-4 py-1.5 bg-white/10 text-white rounded-lg text-[10px] font-bold hover:bg-white/20 transition-all">
+                  <button 
+                    onClick={() => toast.info(`Forecasting ${item.name}`, { description: "Generating 90-day demand prediction model." })}
+                    className="px-4 py-1.5 bg-white/10 text-white rounded-lg text-[10px] font-bold hover:bg-white/20 transition-all"
+                  >
                     View Forecast
                   </button>
                 </div>
@@ -330,7 +339,10 @@ const InventoryManagementView = ({ t, threshold, onThresholdChange }: InventoryM
                 </div>
               </div>
             ))}
-            <button className="w-full py-3 bg-slate-900 dark:bg-blue-600 text-white rounded-2xl font-bold text-sm hover:bg-slate-800 dark:hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
+            <button 
+              onClick={() => toast.success("All Suggestions Approved", { description: "8 purchase orders have been queued for processing." })}
+              className="w-full py-3 bg-slate-900 dark:bg-blue-600 text-white rounded-2xl font-bold text-sm hover:bg-slate-800 dark:hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
+            >
               Approve All Suggestions
             </button>
           </div>

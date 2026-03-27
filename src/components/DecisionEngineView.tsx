@@ -2,6 +2,7 @@ import React from 'react';
 import { BrainCircuit, Play, CheckCircle2, TrendingUp, Calendar, Target, Zap, Loader2, RefreshCw, AlertTriangle, ShieldCheck, ArrowRight } from 'lucide-react';
 import { MarketAnalysis } from '../types';
 import { cn } from '../lib/utils';
+import { toast } from 'sonner';
 
 interface DecisionEngineViewProps {
   t: any;
@@ -131,7 +132,10 @@ const DecisionEngineView = ({ t, analysis, loading, onRefresh }: DecisionEngineV
                     <span className="text-xs font-bold dark:text-white">{decision.confidence}%</span>
                   </div>
                 </div>
-                <button className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl hover:bg-blue-600 hover:text-white transition-all">
+                <button 
+                  onClick={() => toast.success(`Executing Strategy: ${decision.title}`, { description: `Impact: ${decision.impact}. Action: ${decision.action}` })}
+                  className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl hover:bg-blue-600 hover:text-white transition-all"
+                >
                   <ArrowRight size={18} />
                 </button>
               </div>

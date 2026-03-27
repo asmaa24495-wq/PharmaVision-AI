@@ -50,6 +50,8 @@ import DecisionEngineView from './components/DecisionEngineView';
 import SmartAlertsView from './components/SmartAlertsView';
 import ComingSoonView from './components/ComingSoonView';
 import PharmaVisionAssistant from './components/PharmaVisionAssistant';
+import CompetitorsView from './components/CompetitorsView';
+import SimulationsView from './components/SimulationsView';
 import InventoryManagementView from './components/InventoryManagementView';
 import { generateInventoryAlerts } from './services/alertService';
 import { INVENTORY_THRESHOLD, MOCK_INVENTORY } from './constants';
@@ -179,7 +181,7 @@ export default function App() {
       "flex h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 overflow-hidden transition-colors duration-300",
       isRtl ? "font-arabic" : ""
     )}>
-      {pushEnabled && <Toaster position="top-right" richColors />}
+      <Toaster position="top-right" richColors />
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {isSidebarOpen && (
@@ -390,7 +392,10 @@ export default function App() {
                 >
                   <Activity size={16} /> {simulationMode ? t('exitSimulation') : t('predictiveSimulation')}
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95">
+                <button 
+                  onClick={() => toast.success("Exporting Strategic Intelligence", { description: "Preparing PDF and CSV reports for all regions." })}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95"
+                >
                   <FileText size={16} /> {t('exportIntel')}
                 </button>
               </div>
@@ -541,8 +546,8 @@ export default function App() {
                 )}
                 {activeTab === 'alerts' && <SmartAlertsView t={t} alerts={alerts} />}
                 {activeTab === 'assistant' && <PharmaVisionAssistant />}
-                {activeTab === 'competitors' && <ComingSoonView title={t('competitiveIntel')} t={t} />}
-                {activeTab === 'simulations' && <ComingSoonView title={t('simulations')} t={t} />}
+                {activeTab === 'competitors' && <CompetitorsView t={t} />}
+                {activeTab === 'simulations' && <SimulationsView t={t} />}
                 {activeTab === 'reports' && <ReportsView t={t} />}
                 {activeTab === 'settings' && (
                   <SettingsView 

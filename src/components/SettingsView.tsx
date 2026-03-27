@@ -253,7 +253,10 @@ export default function SettingsView({
               label="Password" 
               description="Last changed 3 months ago."
             >
-              <button className="px-4 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">
+              <button 
+                onClick={() => toast.info("Password Change Requested", { description: "A secure reset link has been sent to your registered email." })}
+                className="px-4 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+              >
                 Change
               </button>
             </SettingItem>

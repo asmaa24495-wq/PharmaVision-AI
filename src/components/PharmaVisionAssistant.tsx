@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2, Sparkles, TrendingUp, Target, AlertCircle, RefreshCw, X } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { cn } from '../lib/utils';
+import { toast } from 'sonner';
 import { MOCK_PRODUCTS, MOCK_REGIONS, MOCK_REPS, MOCK_PHARMACIES, COMPETITOR_DATA } from '../constants';
 
 interface Message {
@@ -119,7 +120,18 @@ const PharmaVisionAssistant = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
+          <button 
+            onClick={() => {
+              setMessages([{
+                id: '1',
+                role: 'assistant',
+                content: "Hello! I am PharmaVision AI, your strategic pharmaceutical assistant. I have analyzed your sales data, field force performance, and market trends. How can I help you optimize your business today?",
+                timestamp: new Date()
+              }]);
+              toast.info("Conversation cleared");
+            }}
+            className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
+          >
             <RefreshCw size={18} />
           </button>
         </div>
