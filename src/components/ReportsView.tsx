@@ -137,8 +137,8 @@ const ReportsView = ({ t }: ReportsViewProps) => {
                 className="space-y-6 flex-1"
               >
                 <div>
-                  <h4 className="text-xl font-bold dark:text-white mb-2">Select Data Sources</h4>
-                  <p className="text-sm text-slate-500">Choose the datasets you want to combine in your report.</p>
+                  <h4 className="text-xl font-bold dark:text-white mb-2"><span>Select Data Sources</span></h4>
+                  <p className="text-sm text-slate-500"><span>Choose the datasets you want to combine in your report.</span></p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {reportTypes.map(source => (
@@ -177,8 +177,8 @@ const ReportsView = ({ t }: ReportsViewProps) => {
                 className="space-y-6 flex-1"
               >
                 <div>
-                  <h4 className="text-xl font-bold dark:text-white mb-2">Visualization Type</h4>
-                  <p className="text-sm text-slate-500">How would you like to visualize the combined data?</p>
+                  <h4 className="text-xl font-bold dark:text-white mb-2"><span>Visualization Type</span></h4>
+                  <p className="text-sm text-slate-500"><span>How would you like to visualize the combined data?</span></p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {[
@@ -220,9 +220,9 @@ const ReportsView = ({ t }: ReportsViewProps) => {
                   <Layers size={40} />
                 </div>
                 <div className="max-w-md">
-                  <h4 className="text-2xl font-bold dark:text-white mb-2">Ready to Generate</h4>
+                  <h4 className="text-2xl font-bold dark:text-white mb-2"><span>Ready to Generate</span></h4>
                   <p className="text-sm text-slate-500">
-                    You've selected <span className="font-bold text-blue-600">{selectedSources.length}</span> data sources to be visualized as a <span className="font-bold text-blue-600 uppercase">{reportType}</span>.
+                    <span>You've selected </span><span className="font-bold text-blue-600">{selectedSources.length}</span><span> data sources to be visualized as a </span><span className="font-bold text-blue-600 uppercase">{reportType}</span><span>.</span>
                   </p>
                 </div>
                 <div className="flex flex-wrap justify-center gap-2">
@@ -242,7 +242,7 @@ const ReportsView = ({ t }: ReportsViewProps) => {
               disabled={wizardStep === 1}
               className="px-6 py-3 text-slate-500 font-bold text-sm disabled:opacity-30"
             >
-              Back
+              <span>Back</span>
             </button>
             {wizardStep < 3 ? (
               <button 
@@ -304,7 +304,7 @@ const ReportsView = ({ t }: ReportsViewProps) => {
                   onClick={() => handleExport(report, 'csv')}
                   className="px-4 py-2 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
                 >
-                  CSV
+                  <span>CSV</span>
                 </button>
                 <button 
                   onClick={() => handleExport(report, 'pdf')}

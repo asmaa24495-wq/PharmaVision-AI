@@ -581,7 +581,7 @@ export default function App() {
               <div className="p-4 bg-blue-600 text-white flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <BrainCircuit size={20} />
-                  <span className="font-bold text-sm">PharmaVision AI Assistant</span>
+                  <span className="font-bold text-sm"><span>PharmaVision AI Assistant</span></span>
                 </div>
                 <button onClick={() => setShowAssistant(false)} className="hover:bg-white/20 p-1 rounded-lg">
                   <ChevronRight size={18} className={cn(isRtl ? "rotate-180" : "rotate-90")} />
@@ -590,7 +590,7 @@ export default function App() {
               <div className="h-80 p-4 overflow-y-auto bg-slate-50 dark:bg-slate-950 space-y-4 custom-scrollbar">
                 {bubbleMessages.map((msg, i) => (
                   <div 
-                    key={i} 
+                    key={`msg-${i}`} 
                     className={cn(
                       "p-3 rounded-2xl shadow-sm text-xs leading-relaxed border border-slate-100 dark:border-slate-800",
                       msg.role === 'assistant' 
@@ -598,7 +598,7 @@ export default function App() {
                         : "bg-blue-600 rounded-tr-none text-white ml-8"
                     )}
                   >
-                    {msg.content}
+                    <span>{msg.content}</span>
                   </div>
                 ))}
                 {isBubbleLoading && (
