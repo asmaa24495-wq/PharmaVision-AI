@@ -106,7 +106,11 @@ const resources = {
       "overstock": "Overstock",
       "predictedStockout": "Predicted Stockout",
       "suggestedReorder": "Suggested Reorder",
-      "lastRestock": "Last Restock"
+      "lastRestock": "Last Restock",
+      "products": "Products",
+      "pharmacies": "Pharmacies",
+      "reps": "Medical Representatives",
+      "startSearching": "Start typing to search enterprise data..."
     }
   },
   ar: {
@@ -212,7 +216,11 @@ const resources = {
       "overstock": "مخزون زائد",
       "predictedStockout": "توقع نفاد المخزون",
       "suggestedReorder": "إعادة طلب مقترحة",
-      "lastRestock": "آخر إعادة توريد"
+      "lastRestock": "آخر إعادة توريد",
+      "products": "المنتجات",
+      "pharmacies": "الصيدليات",
+      "reps": "المندوبين الطبيين",
+      "startSearching": "ابدأ الكتابة للبحث في بيانات المؤسسة..."
     }
   }
 };

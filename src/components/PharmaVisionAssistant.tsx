@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Sparkles, TrendingUp, Target, AlertCircle, RefreshCw, X } from 'lucide-react';
+import { Send, Bot, User, Loader2, Sparkles, TrendingUp, Target, AlertCircle, RefreshCw, X, Camera, Paperclip } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { cn } from '../lib/utils';
 import { MOCK_PRODUCTS, MOCK_REGIONS, MOCK_REPS, MOCK_PHARMACIES, COMPETITOR_DATA } from '../constants';
@@ -9,6 +9,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  image?: string;
 }
 
 const PharmaVisionAssistant = () => {
@@ -22,6 +23,8 @@ const PharmaVisionAssistant = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,18 +33,33 @@ const PharmaVisionAssistant = () => {
     }
   }, [messages]);
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if ((!input.trim() && !selectedImage) || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
       content: input,
-      timestamp: new Date()
+      timestamp: new Date(),
+      image: selectedImage || undefined
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = input;
+    const currentImage = selectedImage;
     setInput('');
+    setSelectedImage(null);
     setIsLoading(true);
 
     const apiKey = process.env.GEMINI_API_KEY2;
@@ -81,14 +99,31 @@ const PharmaVisionAssistant = () => {
         - Competitors: ${JSON.stringify(COMPETITOR_DATA)}
       `;
 
-      const chat = ai.chats.create({
-        model,
-        config: {
-          systemInstruction: context,
-        },
-      });
-
-      const response = await chat.sendMessage({ message: input });
+      let response: any;
+      if (currentImage) {
+        const base64Data = currentImage.split(',')[1];
+        const mimeType = currentImage.split(';')[0].split(':')[1];
+        response = await ai.models.generateContent({
+          model,
+          contents: {
+            parts: [
+              { text: currentInput || "Analyze this image." },
+              { inlineData: { data: base64Data, mimeType } }
+            ]
+          },
+          config: {
+            systemInstruction: context,
+          }
+        });
+      } else {
+        const chat = ai.chats.create({
+          model,
+          config: {
+            systemInstruction: context,
+          },
+        });
+        response = await chat.sendMessage({ message: currentInput });
+      }
       
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -179,6 +214,11 @@ const PharmaVisionAssistant = () => {
                 ? "bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 border border-slate-100 dark:border-slate-800 rounded-tl-none" 
                 : "bg-blue-600 text-white rounded-tr-none"
             )}>
+              {msg.image && (
+                <div className="mb-3 rounded-2xl overflow-hidden border border-white/20">
+                  <img src={msg.image} alt="Uploaded" className="max-w-full h-auto" />
+                </div>
+              )}
               <div className="prose prose-sm dark:prose-invert max-w-none">
                 {msg.content}
               </div>
@@ -206,7 +246,19 @@ const PharmaVisionAssistant = () => {
 
       {/* Input Area */}
       <div className="p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 relative z-10">
-        {messages.length === 1 && (
+        {selectedImage && (
+          <div className="mb-4 relative inline-block">
+            <img src={selectedImage} alt="Preview" className="w-32 h-32 object-cover rounded-2xl border-2 border-blue-500 shadow-xl" />
+            <button 
+              onClick={() => setSelectedImage(null)}
+              className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-2 shadow-lg hover:bg-rose-600 transition-colors"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
+        
+        {messages.length === 1 && !selectedImage && (
           <div className="flex flex-wrap gap-2 mb-6">
             {suggestions.map((s, i) => (
               <button
@@ -221,6 +273,20 @@ const PharmaVisionAssistant = () => {
           </div>
         )}
         <div className="flex items-center gap-4">
+          <input 
+            type="file" 
+            ref={fileInputRef}
+            onChange={handleImageSelect}
+            accept="image/*"
+            className="hidden"
+          />
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            className="p-4 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-blue-600 rounded-2xl transition-all hover:bg-blue-50 dark:hover:bg-blue-900/20"
+            title="Upload Image"
+          >
+            <Camera size={24} />
+          </button>
           <div className="flex-1 relative">
             <input
               type="text"
@@ -232,7 +298,7 @@ const PharmaVisionAssistant = () => {
             />
             <button 
               onClick={handleSend}
-              disabled={isLoading || !input.trim()}
+              disabled={isLoading || (!input.trim() && !selectedImage)}
               className="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-500 disabled:opacity-50 transition-all shadow-lg shadow-blue-600/20"
             >
               <Send size={18} />

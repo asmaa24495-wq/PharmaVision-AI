@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -24,7 +24,10 @@ import {
   Search,
   Bot,
   Send,
-  Loader2
+  Loader2,
+  Camera,
+  Paperclip,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -34,7 +37,10 @@ import {
   MOCK_PRODUCTS, 
   MOCK_REGIONS, 
   MOCK_PHARMACIES,
-  COMPETITOR_DATA
+  MOCK_REPS,
+  COMPETITOR_DATA,
+  MOCK_INVENTORY,
+  INVENTORY_THRESHOLD
 } from './constants';
 import { getDetailedAnalysis } from './services/aiService';
 import { MarketAnalysis } from './types';
@@ -54,7 +60,6 @@ import CompetitorsView from './components/CompetitorsView';
 import SimulationsView from './components/SimulationsView';
 import InventoryManagementView from './components/InventoryManagementView';
 import { generateInventoryAlerts } from './services/alertService';
-import { INVENTORY_THRESHOLD, MOCK_INVENTORY } from './constants';
 import { Alert } from './types';
 
 // --- Main App ---
@@ -73,6 +78,8 @@ export default function App() {
   const [simulationMode, setSimulationMode] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [inventoryThreshold, setInventoryThreshold] = useState(INVENTORY_THRESHOLD);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [pushEnabled, setPushEnabled] = useState(false);
@@ -83,6 +90,8 @@ export default function App() {
   ]);
   const [bubbleInput, setBubbleInput] = useState('');
   const [isBubbleLoading, setIsBubbleLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [userProfile, setUserProfile] = useState({
     name: 'Dr. Ahmed Hassan',
     title: 'Chief Strategist',
@@ -135,13 +144,36 @@ export default function App() {
     i18n.changeLanguage(nextLang);
   };
 
-  const handleBubbleSend = async () => {
-    if (!bubbleInput.trim() || isBubbleLoading) return;
+  const filteredResults = searchQuery.trim() ? {
+    products: MOCK_PRODUCTS.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase())),
+    pharmacies: MOCK_PHARMACIES.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase())),
+    reps: MOCK_REPS.filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  } : null;
 
-    const userMsg = { role: 'user', content: bubbleInput };
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleBubbleSend = async () => {
+    if ((!bubbleInput.trim() && !selectedImage) || isBubbleLoading) return;
+
+    const userMsg = { 
+      role: 'user', 
+      content: bubbleInput,
+      image: selectedImage 
+    };
     setBubbleMessages(prev => [...prev, userMsg]);
     const currentInput = bubbleInput;
+    const currentImage = selectedImage;
     setBubbleInput('');
+    setSelectedImage(null);
     setIsBubbleLoading(true);
 
     const apiKey = process.env.GEMINI_API_KEY2;
@@ -153,9 +185,24 @@ export default function App() {
     try {
       const ai = new GoogleGenAI({ apiKey });
       const model = "gemini-3-flash-preview";
+      
+      let contents: any;
+      if (currentImage) {
+        const base64Data = currentImage.split(',')[1];
+        const mimeType = currentImage.split(';')[0].split(':')[1];
+        contents = {
+          parts: [
+            { text: currentInput || "Analyze this image." },
+            { inlineData: { data: base64Data, mimeType } }
+          ]
+        };
+      } else {
+        contents = currentInput;
+      }
+
       const response = await ai.models.generateContent({
         model,
-        contents: currentInput,
+        contents,
         config: {
           systemInstruction: `You are PharmaVision AI, the Ultimate Strategic Intelligence System for the Pharmaceutical Industry. Your mission is to empower pharmaceutical companies, sales managers, and medical representatives with data-driven, actionable insights.
 
@@ -279,6 +326,11 @@ Style Guidelines:
               <Search className={cn("absolute top-1/2 -translate-y-1/2 text-slate-400", isRtl ? "right-3" : "left-3")} size={18} />
               <input 
                 type="text" 
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (e.target.value) setIsSearchOpen(true);
+                }}
                 placeholder={t('searchPlaceholder')} 
                 className={cn(
                   "w-full py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 transition-all dark:text-white",
@@ -295,6 +347,12 @@ Style Guidelines:
             </div>
 
             <div className="flex items-center gap-2">
+              <button 
+                className="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors sm:hidden"
+                onClick={() => setIsSearchOpen(true)}
+              >
+                <Search size={20} />
+              </button>
               <button 
                 onClick={() => navigate('/settings')}
                 className={cn(
@@ -582,6 +640,130 @@ Style Guidelines:
         </div>
       </main>
 
+      {/* Search Overlay */}
+      <AnimatePresence>
+        {isSearchOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[60] p-4 md:p-20"
+          >
+            <div className="max-w-3xl mx-auto bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-full border border-slate-200 dark:border-slate-800">
+              <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center gap-4">
+                <Search className="text-blue-600" size={24} />
+                <input 
+                  autoFocus
+                  type="text" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('searchPlaceholder')}
+                  className="flex-1 bg-transparent border-none text-xl focus:ring-0 dark:text-white"
+                />
+                <button 
+                  onClick={() => {
+                    setIsSearchOpen(false);
+                    setSearchQuery('');
+                  }}
+                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                {!searchQuery.trim() ? (
+                  <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-4">
+                    <Search size={48} className="opacity-20" />
+                    <p className="font-bold uppercase tracking-widest text-xs">{t('startSearching')}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-8">
+                    {filteredResults?.products.length! > 0 && (
+                      <div>
+                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                          <Package size={14} /> {t('products')}
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {filteredResults?.products.map(p => (
+                            <div 
+                              key={p.id} 
+                              onClick={() => {
+                                setIsSearchOpen(false);
+                                setSearchQuery('');
+                                navigate('/inventory-mgmt');
+                              }}
+                              className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-all border border-transparent hover:border-blue-200"
+                            >
+                              <p className="font-bold text-sm dark:text-white">{p.name}</p>
+                              <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">{p.category}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {filteredResults?.pharmacies.length! > 0 && (
+                      <div>
+                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                          <Building2 size={14} /> {t('pharmacies')}
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {filteredResults?.pharmacies.map(p => (
+                            <div 
+                              key={p.id} 
+                              onClick={() => {
+                                setIsSearchOpen(false);
+                                setSearchQuery('');
+                                navigate('/pharmacy');
+                              }}
+                              className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-all border border-transparent hover:border-blue-200"
+                            >
+                              <p className="font-bold text-sm dark:text-white">{p.name}</p>
+                              <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">{p.location}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {filteredResults?.reps.length! > 0 && (
+                      <div>
+                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                          <Users size={14} /> {t('reps')}
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {filteredResults?.reps.map(r => (
+                            <div 
+                              key={r.id} 
+                              onClick={() => {
+                                setIsSearchOpen(false);
+                                setSearchQuery('');
+                                navigate('/reps');
+                              }}
+                              className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-all border border-transparent hover:border-blue-200"
+                            >
+                              <p className="font-bold text-sm dark:text-white">{r.name}</p>
+                              <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">{r.region}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {filteredResults?.products.length === 0 && filteredResults?.pharmacies.length === 0 && filteredResults?.reps.length === 0 && (
+                      <div className="h-40 flex flex-col items-center justify-center text-slate-400 space-y-2">
+                        <p className="font-bold uppercase tracking-widest text-xs">No results found for "{searchQuery}"</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* AI Conversational Assistant Bubble */}
       <div className={cn("fixed bottom-8 z-50", isRtl ? "left-8" : "right-8")}>
         <AnimatePresence>
@@ -615,6 +797,11 @@ Style Guidelines:
                         : "bg-blue-600 rounded-tr-none text-white ml-8"
                     )}
                   >
+                    {msg.image && (
+                      <div className="mb-2 rounded-lg overflow-hidden border border-white/20">
+                        <img src={msg.image} alt="Uploaded" className="max-w-full h-auto" />
+                      </div>
+                    )}
                     <span>{msg.content}</span>
                   </div>
                 ))}
@@ -626,22 +813,49 @@ Style Guidelines:
                 )}
               </div>
               <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
-                <div className="relative">
+                {selectedImage && (
+                  <div className="mb-3 relative inline-block">
+                    <img src={selectedImage} alt="Preview" className="w-20 h-20 object-cover rounded-xl border-2 border-blue-500" />
+                    <button 
+                      onClick={() => setSelectedImage(null)}
+                      className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-lg"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                )}
+                <div className="relative flex items-center gap-2">
                   <input 
-                    type="text" 
-                    value={bubbleInput}
-                    onChange={(e) => setBubbleInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleBubbleSend()}
-                    placeholder={t('askAiAnything')} 
-                    className="w-full pl-4 pr-10 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-xs focus:ring-2 focus:ring-blue-500 dark:text-white"
+                    type="file" 
+                    ref={fileInputRef}
+                    onChange={handleImageSelect}
+                    accept="image/*"
+                    className="hidden"
                   />
                   <button 
-                    onClick={handleBubbleSend}
-                    disabled={isBubbleLoading || !bubbleInput.trim()}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-blue-600 disabled:opacity-50"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
+                    title="Upload Image"
                   >
-                    <Send size={16} />
+                    <Camera size={20} />
                   </button>
+                  <div className="relative flex-1">
+                    <input 
+                      type="text" 
+                      value={bubbleInput}
+                      onChange={(e) => setBubbleInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleBubbleSend()}
+                      placeholder={t('askAiAnything')} 
+                      className="w-full pl-4 pr-10 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-xs focus:ring-2 focus:ring-blue-500 dark:text-white"
+                    />
+                    <button 
+                      onClick={handleBubbleSend}
+                      disabled={isBubbleLoading || (!bubbleInput.trim() && !selectedImage)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-blue-600 disabled:opacity-50"
+                    >
+                      <Send size={16} />
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>
