@@ -1,6 +1,5 @@
 import React from 'react';
 import { Construction, Bell } from 'lucide-react';
-import { toast } from 'sonner';
 
 interface ComingSoonViewProps {
   title: string;
@@ -20,7 +19,7 @@ const ComingSoonView = ({ title, t }: ComingSoonViewProps) => (
       </p>
     </div>
     <button 
-      onClick={() => toast.success("Notification set!", { description: `We'll notify you as soon as ${title} is ready for launch.` })}
+      onClick={() => console.log("Notification set!", `We'll notify you as soon as ${title} is ready for launch.`)}
       className="px-8 py-3 bg-blue-600 text-white rounded-2xl font-bold text-sm hover:bg-blue-700 transition-all flex items-center gap-2 shadow-lg shadow-blue-200 dark:shadow-blue-900/20 active:scale-95"
     >
       <Bell size={18} />

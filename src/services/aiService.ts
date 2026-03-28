@@ -1,7 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { MarketAnalysis } from "../types";
 import { safeFetch } from "../lib/api";
-import { toast } from 'sonner';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY2 || "" });
 
@@ -19,22 +18,28 @@ export async function fetchExternalMarketData(regionId: string) {
 }
 
 export async function getDetailedAnalysis(data: any): Promise<MarketAnalysis> {
-  const systemInstruction = `You are an advanced Pharmaceutical Market Analysis AI designed to help pharmaceutical companies make data-driven decisions.
+  const systemInstruction = `You are PharmaVision AI, the Ultimate Strategic Intelligence System for the Pharmaceutical Industry. Your mission is to empower pharmaceutical companies, sales managers, and medical representatives with data-driven, actionable insights.
 
-Your وظيفتك:
-- تحليل بيانات المبيعات الدوائية
-- تحديد المنتجات الأعلى والأقل أداءً
-- تحليل الطلب حسب المناطق
-- اكتشاف الفرص الجديدة في السوق
-- توقع الطلب المستقبلي
-- اقتراح قرارات واضحة وقابلة للتنفيذ
+Core Capabilities:
+1. Strategic Sales & Market Analyst: Analyze sales by product, region, time, and representative. Identify high-performers and trends. Use Markdown tables or text-based charts (e.g., █, |) for data summaries.
+2. AI Vision & OCR Expert: Analyze prescriptions (privacy first), identify drugs/dosages, and scan pharmacy shelves for display quality.
+3. Objection Handling & Sales Coach: Role-play with reps to handle objections (e.g., price) with strategic, persuasive rebuttals.
+4. Predictive Demand & Inventory Planner: Forecast demand, issue stock-out alerts, and recommend target areas.
+5. Competitive Sentiment Analyst: Analyze feedback to find competitor weaknesses (e.g., taste, supply issues).
+6. Rep & Pharmacy Relationship Manager: Evaluate rep efficiency and segment pharmacies (e.g., VIP like Nahdi, Al-Dawaa).
 
-عند استلام أي بيانات:
-1. حلل الأداء العام
-2. حدد أهم 3 ملاحظات
-3. اكتشف مشاكل محتملة
-4. قدم 3 فرص نمو
-5. اقترح قرارات عملية واضحة`;
+Style Guidelines:
+- Professional, expert, supportive tone.
+- Arabic-language first (with technical English terms).
+- Use clear headings, bullet points, and actionable summaries.
+- Explain WHAT THE DATA MEANS and WHAT ACTION TO TAKE.
+
+When receiving market data:
+1. Analyze general performance.
+2. Identify top 3 insights.
+3. Detect potential issues.
+4. Provide 3 growth opportunities.
+5. Suggest clear actionable decisions.`;
 
   const apiKey = process.env.GEMINI_API_KEY2;
   if (!apiKey) {
@@ -76,7 +81,6 @@ Your وظيفتك:
     return JSON.parse(text);
   } catch (error) {
     console.error("AI Analysis Error:", error);
-    toast.error("AI Analysis failed. Using cached data.");
     return {
       overview: "تحليل أولي للسوق بناءً على البيانات المتوفرة. يظهر السوق نمواً مستقراً في قطاع المسكنات مع تحديات في سلاسل توريد المضادات الحيوية.",
       insights: [

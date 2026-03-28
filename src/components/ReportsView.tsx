@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { FileText, Download, BarChart3, Package, Globe, Users, Store, Calendar, ArrowRight, Check, ChevronLeft, ChevronRight, Layout, PieChart, Table as TableIcon, Layers } from 'lucide-react';
 import { MOCK_PRODUCTS, MOCK_INVENTORY, MOCK_REGIONS, MOCK_REPS, MOCK_PHARMACIES } from '../constants';
 import { exportToCSV, exportToPDF } from '../lib/exportUtils';
-import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 
@@ -76,9 +75,9 @@ const ReportsView = ({ t }: ReportsViewProps) => {
       } else {
         exportToPDF(report.data, report.filename, report.title);
       }
-      toast.success(`${report.title} exported as ${format.toUpperCase()}`);
+      console.log(`${report.title} exported as ${format.toUpperCase()}`);
     } catch (error) {
-      toast.error('Export failed. Please try again.');
+      console.error('Export failed:', error);
     }
   };
 
@@ -89,9 +88,7 @@ const ReportsView = ({ t }: ReportsViewProps) => {
   };
 
   const generateCustomReport = () => {
-    toast.success('Custom report generated successfully!', {
-      description: `Combined ${selectedSources.length} data sources into a ${reportType} view.`
-    });
+    console.log('Custom report generated successfully!', `Combined ${selectedSources.length} data sources into a ${reportType} view.`);
     setShowWizard(false);
     setWizardStep(1);
     setSelectedSources([]);

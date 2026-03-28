@@ -1,4 +1,3 @@
-import { toast } from 'sonner';
 
 interface FetchOptions extends RequestInit {
   timeout?: number;
@@ -25,7 +24,6 @@ export async function safeFetch<T>(url: string, options: FetchOptions = {}): Pro
       const errorData = await response.json().catch(() => ({}));
       const errorMessage = errorData.message || `API Error: ${response.status} ${response.statusText}`;
       console.error("API Response Error:", errorMessage);
-      toast.error(errorMessage);
       return null;
     }
 
@@ -33,10 +31,9 @@ export async function safeFetch<T>(url: string, options: FetchOptions = {}): Pro
   } catch (error: any) {
     clearTimeout(id);
     if (error.name === 'AbortError') {
-      toast.error("Request timed out. Please try again.");
+      console.error("Request timed out");
     } else {
       console.error("Network Fetch Error:", error);
-      toast.error("Network error. Please check your connection.");
     }
     return null;
   }

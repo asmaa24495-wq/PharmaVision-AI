@@ -2,7 +2,6 @@ import React from 'react';
 import { Globe, TrendingUp, TrendingDown, ShieldAlert, Target, Users, Zap } from 'lucide-react';
 import { COMPETITOR_DATA } from '../constants';
 import { cn } from '../lib/utils';
-import { toast } from 'sonner';
 
 interface CompetitorsViewProps {
   t: any;
@@ -61,7 +60,7 @@ const CompetitorsView = ({ t }: CompetitorsViewProps) => {
             </div>
 
             <button 
-              onClick={() => toast.info(`Analyzing Counter-Strategy for ${competitor.name}`, { description: "AI is generating a tactical response based on market shifts." })}
+              onClick={() => console.log(`Analyzing Counter-Strategy for ${competitor.name}`, "AI is generating a tactical response based on market shifts.")}
               className="w-full mt-6 py-3 bg-indigo-600 text-white rounded-xl font-bold text-xs hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
             >
               <ShieldAlert size={14} />

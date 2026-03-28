@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2, Sparkles, TrendingUp, Target, AlertCircle, RefreshCw, X } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { cn } from '../lib/utils';
-import { toast } from 'sonner';
 import { MOCK_PRODUCTS, MOCK_REGIONS, MOCK_REPS, MOCK_PHARMACIES, COMPETITOR_DATA } from '../constants';
 
 interface Message {
@@ -17,7 +16,7 @@ const PharmaVisionAssistant = () => {
     {
       id: '1',
       role: 'assistant',
-      content: "Hello! I am PharmaVision AI, your strategic pharmaceutical assistant. I have analyzed your sales data, field force performance, and market trends. How can I help you optimize your business today?",
+      content: "مرحباً بك! أنا PharmaVision AI، نظام الاستخبارات الاستراتيجي المتكامل لقطاع الأدوية. لقد قمت بتحليل بيانات المبيعات، أداء الفريق الميداني، واتجاهات السوق الحالية. كيف يمكنني مساعدتك في تعظيم الأرباح وتحسين الأداء اليوم؟",
       timestamp: new Date()
     }
   ]);
@@ -47,7 +46,7 @@ const PharmaVisionAssistant = () => {
 
     const apiKey = process.env.GEMINI_API_KEY2;
     if (!apiKey) {
-      toast.error("Gemini API Key is missing. Please check your environment variables.");
+      console.error("Gemini API Key is missing");
       setIsLoading(false);
       return;
     }
@@ -57,17 +56,29 @@ const PharmaVisionAssistant = () => {
       const model = "gemini-3-flash-preview";
       
       const context = `
-        You are PharmaVision AI, a strategic pharmaceutical business assistant.
+        You are PharmaVision AI, the Ultimate Strategic Intelligence System for the Pharmaceutical Industry. 
+        Your mission is to empower pharmaceutical companies, sales managers, and medical representatives with data-driven, actionable insights.
+
+        Core Capabilities:
+        1. Strategic Sales & Market Analyst: Analyze sales by product, region, time, and representative. Identify high-performers and trends. Use Markdown tables or text-based charts (e.g., █, |) for data summaries.
+        2. AI Vision & OCR Expert: Analyze prescriptions (privacy first), identify drugs/dosages, and scan pharmacy shelves for display quality.
+        3. Objection Handling & Sales Coach: Role-play with reps to handle objections (e.g., price) with strategic, persuasive rebuttals.
+        4. Predictive Demand & Inventory Planner: Forecast demand, issue stock-out alerts, and recommend target areas.
+        5. Competitive Sentiment Analyst: Analyze feedback to find competitor weaknesses (e.g., taste, supply issues).
+        6. Rep & Pharmacy Relationship Manager: Evaluate rep efficiency and segment pharmacies (e.g., VIP like Nahdi, Al-Dawaa).
+
+        Style Guidelines:
+        - Professional, expert, supportive tone.
+        - Arabic-language first (with technical English terms).
+        - Use clear headings, bullet points, and actionable summaries.
+        - Explain WHAT THE DATA MEANS and WHAT ACTION TO TAKE.
+
         You have access to the following market data:
         - Products: ${JSON.stringify(MOCK_PRODUCTS)}
         - Regions: ${JSON.stringify(MOCK_REGIONS)}
         - Representatives: ${JSON.stringify(MOCK_REPS)}
         - Pharmacies: ${JSON.stringify(MOCK_PHARMACIES)}
         - Competitors: ${JSON.stringify(COMPETITOR_DATA)}
-
-        Your goal is to provide clear, actionable, and data-driven insights. 
-        Answer questions about sales performance, market trends, and strategic business decisions.
-        Be professional, concise, and insightful. Use markdown for formatting.
       `;
 
       const chat = ai.chats.create({
@@ -132,10 +143,9 @@ const PharmaVisionAssistant = () => {
               setMessages([{
                 id: '1',
                 role: 'assistant',
-                content: "Hello! I am PharmaVision AI, your strategic pharmaceutical assistant. I have analyzed your sales data, field force performance, and market trends. How can I help you optimize your business today?",
+                content: "مرحباً بك! أنا PharmaVision AI، نظام الاستخبارات الاستراتيجي المتكامل لقطاع الأدوية. لقد قمت بتحليل بيانات المبيعات، أداء الفريق الميداني، واتجاهات السوق الحالية. كيف يمكنني مساعدتك في تعظيم الأرباح وتحسين الأداء اليوم؟",
                 timestamp: new Date()
               }]);
-              toast.info("Conversation cleared");
             }}
             className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
           >

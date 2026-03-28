@@ -18,7 +18,6 @@ import {
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
-import { toast } from 'sonner';
 
 interface SettingsViewProps {
   darkMode: boolean;
@@ -115,9 +114,7 @@ export default function SettingsView({
     setEmailEnabled(localEmailEnabled);
     setTwoFactorEnabled(localTwoFactorEnabled);
     
-    toast.success(t('saveChanges'), {
-      description: 'Your preferences have been updated across the enterprise system.'
-    });
+    console.log('Settings saved successfully');
   };
 
   const handleReset = () => {
@@ -126,9 +123,7 @@ export default function SettingsView({
     setLocalEmailEnabled(emailEnabled);
     setLocalTwoFactorEnabled(twoFactorEnabled);
     
-    toast.info(t('resetDefaults'), {
-      description: 'Settings have been restored to factory defaults.'
-    });
+    console.log('Settings reset to defaults');
   };
 
   const handleAvatarChange = () => {
@@ -254,7 +249,7 @@ export default function SettingsView({
               description="Last changed 3 months ago."
             >
               <button 
-                onClick={() => toast.info("Password Change Requested", { description: "A secure reset link has been sent to your registered email." })}
+                onClick={() => console.log("Password Change Requested", "A secure reset link has been sent to your registered email.")}
                 className="px-4 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
               >
                 Change

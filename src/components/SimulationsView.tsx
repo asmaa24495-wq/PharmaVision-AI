@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Play, TrendingUp, TrendingDown, Activity, Zap, Target, ShieldCheck, Loader2, RefreshCw } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { toast } from 'sonner';
 
 interface SimulationsViewProps {
   t: any;
@@ -45,9 +44,7 @@ const SimulationsView = ({ t }: SimulationsViewProps) => {
     setTimeout(() => {
       setIsRunning(false);
       setActiveSimulation(null);
-      toast.success("Simulation Complete!", {
-        description: `The ${simulations.find(s => s.id === id)?.title} has been processed with 92% confidence.`
-      });
+      console.log("Simulation Complete!", `The ${simulations.find(s => s.id === id)?.title} has been processed with 92% confidence.`);
     }, 3000);
   };
 
@@ -121,8 +118,8 @@ const SimulationsView = ({ t }: SimulationsViewProps) => {
           </div>
           <button 
             onClick={() => {
-              toast.info("Monte Carlo analysis initiated", { description: "Processing 10,000 scenarios..." });
-              setTimeout(() => toast.success("Analysis Complete!", { description: "Most probable outcome: 12.4% growth with 88% probability." }), 4000);
+              console.log("Monte Carlo analysis initiated", "Processing 10,000 scenarios...");
+              setTimeout(() => console.log("Analysis Complete!", "Most probable outcome: 12.4% growth with 88% probability."), 4000);
             }}
             className="px-10 py-4 bg-white text-slate-900 rounded-2xl font-bold text-sm hover:bg-blue-50 transition-all flex items-center gap-3 shadow-xl"
           >

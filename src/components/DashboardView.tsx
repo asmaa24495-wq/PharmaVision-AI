@@ -3,7 +3,6 @@ import { TrendingUp, Activity, Package, ShieldCheck, AlertTriangle, BrainCircuit
 import StatCard from './StatCard';
 import { MarketAnalysis, Alert } from '../types';
 import { cn } from '../lib/utils';
-import { toast } from 'sonner';
 
 interface DashboardViewProps {
   analysis: MarketAnalysis | null;
@@ -111,7 +110,7 @@ const DashboardView = ({ analysis, loading, t, alerts }: DashboardViewProps) => 
               {analysis?.recommendations.slice(0, 3).map((rec, i) => (
                 <div 
                   key={i} 
-                  onClick={() => toast.info(`Strategy ${i+1} selected`, { description: rec })}
+                  onClick={() => console.log(`Strategy ${i+1} selected`, rec)}
                   className="group p-5 bg-white/5 border border-white/10 rounded-3xl hover:bg-white/10 transition-all cursor-pointer"
                 >
                   <div className="flex items-center justify-between mb-3">
