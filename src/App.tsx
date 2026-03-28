@@ -56,7 +56,6 @@ import InventoryManagementView from './components/InventoryManagementView';
 import { generateInventoryAlerts } from './services/alertService';
 import { INVENTORY_THRESHOLD, MOCK_INVENTORY } from './constants';
 import { Alert } from './types';
-import { Toaster, toast } from 'sonner';
 
 // --- Main App ---
 
@@ -94,8 +93,8 @@ export default function App() {
   const isRtl = i18n.language === 'ar';
 
   const handleSidebarClick = (tab: string) => {
-    navigate(`/${tab}`);
     setIsSidebarOpen(false);
+    navigate(`/${tab}`);
   };
 
   useEffect(() => {
@@ -128,21 +127,6 @@ export default function App() {
 
   useEffect(() => {
     const newAlerts = generateInventoryAlerts(MOCK_INVENTORY, inventoryThreshold);
-    
-    // Check for new critical alerts to notify
-    const criticalAlerts = newAlerts.filter(a => a.type === 'critical');
-    if (criticalAlerts.length > 0) {
-      criticalAlerts.forEach(alert => {
-        toast.error(alert.title, {
-          description: alert.message,
-          action: {
-            label: 'Email Sent',
-            onClick: () => console.log('Email notification simulation')
-          }
-        });
-      });
-    }
-
     setAlerts(newAlerts);
   }, [inventoryThreshold]);
 
@@ -162,7 +146,6 @@ export default function App() {
 
     const apiKey = process.env.GEMINI_API_KEY2;
     if (!apiKey) {
-      toast.error("Gemini API Key is missing. Please check your environment variables.");
       setIsBubbleLoading(false);
       return;
     }
@@ -193,7 +176,6 @@ export default function App() {
       "flex h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 overflow-hidden transition-colors duration-300",
       isRtl ? "font-arabic" : ""
     )}>
-      <Toaster position="top-right" richColors />
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {isSidebarOpen && (
@@ -405,7 +387,7 @@ export default function App() {
                   <Activity size={16} /> {simulationMode ? t('exitSimulation') : t('predictiveSimulation')}
                 </button>
                 <button 
-                  onClick={() => toast.success("Exporting Strategic Intelligence", { description: "Preparing PDF and CSV reports for all regions." })}
+                  onClick={() => console.log("Exporting Strategic Intelligence")}
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95"
                 >
                   <FileText size={16} /> {t('exportIntel')}
@@ -415,11 +397,12 @@ export default function App() {
 
             <AnimatePresence mode="wait">
               <motion.div
-                key={activeTab}
+                key={location.pathname}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.2 }}
+                className="w-full"
               >
                 <Routes location={location}>
                   <Route path="/" element={<Navigate to="/dashboard" replace />} />
