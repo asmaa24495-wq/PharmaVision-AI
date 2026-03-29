@@ -203,6 +203,11 @@ export default function App() {
     setAlerts(newAlerts);
   }, [inventory, inventoryThreshold]);
 
+  useEffect(() => {
+    setIsSearchOpen(false);
+    setSearchQuery('');
+  }, [location]);
+
   const toggleLanguage = () => {
     const nextLang = i18n.language === 'en' ? 'ar' : 'en';
     i18n.changeLanguage(nextLang);
@@ -797,9 +802,16 @@ Tool Usage:
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            onClick={() => {
+              setIsSearchOpen(false);
+              setSearchQuery('');
+            }}
             className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[60] p-4 md:p-20"
           >
-            <div className="max-w-3xl mx-auto bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-full border border-slate-200 dark:border-slate-800">
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              className="max-w-3xl mx-auto bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-full border border-slate-200 dark:border-slate-800"
+            >
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center gap-4">
                 <Search className="text-blue-600" size={24} />
                 <input 
