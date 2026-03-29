@@ -1,0 +1,92 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: inventory
+    // Document ID: itemId
+    // Fields:
+    //   - id: string (required)
+    //   - name: string (required, size < 100)
+    //   - currentStock: number (required, >= 0)
+    //   - forecastedDemand: number (optional, >= 0)
+    //   - reorderPoint: number (required, >= 0)
+    //   - reorderQuantity: number (optional, >= 0)
+    //   - status: string (required, enum: ["In Stock", "Low Stock", "Out of Stock", "Overstock"])
+    //   - lastRestockDate: string (optional, ISO 8601)
+    //   - daysOfSupply: number (optional, >= 0)
+    //
+    // Collection: stats
+    // Document ID: dashboard
+    // Fields:
+    //   - totalRevenue: number
+    //   - revenueChange: string
+    //   - growth: number
+    //   - growthChange: string
+    //   - topProduct: string
+    //   - topProductChange: string
+    //   - marketHealth: number
+    //   - marketHealthChange: string
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "sooo1421997@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidInventoryItem(data) {
+      return data.keys().hasAll(['id', 'name', 'currentStock', 'reorderPoint', 'status']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() < 50 &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.currentStock is number && data.currentStock >= 0 &&
+             data.reorderPoint is number && data.reorderPoint >= 0 &&
+             data.status in ["In Stock", "Low Stock", "Out of Stock", "Overstock"] &&
+             (!('forecastedDemand' in data) || (data.forecastedDemand is number && data.forecastedDemand >= 0)) &&
+             (!('reorderQuantity' in data) || (data.reorderQuantity is number && data.reorderQuantity >= 0)) &&
+             (!('daysOfSupply' in data) || (data.daysOfSupply is number && data.daysOfSupply >= 0)) &&
+             (!('lastRestockDate' in data) || (data.lastRestockDate is string && data.lastRestockDate.size() < 50));
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow create: if isAuthenticated() && request.auth.uid == userId && 
+                    request.resource.data.keys().hasOnly(['uid', 'email', 'displayName', 'role']) &&
+                    request.resource.data.role == 'user';
+      allow update: if isAuthenticated() && request.auth.uid == userId && 
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'photoURL']);
+    }
+
+    match /inventory/{itemId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidInventoryItem(request.resource.data);
+      allow update: if isAuthenticated() && isValidInventoryItem(request.resource.data);
+      allow delete: if isAuthenticated(); // In a real app, maybe only admins
+    }
+
+    match /stats/dashboard {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /sales/{saleId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated(); // In a real app, maybe only specific roles
+      allow update, delete: if isAdmin();
+    }
+  }
+}

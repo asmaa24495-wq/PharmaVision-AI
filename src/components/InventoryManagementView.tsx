@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Package, 
   AlertTriangle, 
@@ -18,13 +18,14 @@ import {
   Layers,
   Clock,
   Target,
-  BarChart3
+  BarChart3,
+  Trash2
 } from 'lucide-react';
-import { MOCK_INVENTORY } from '../constants';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { InventoryItem } from '../types';
 import ExportDataPanel from './ExportDataPanel';
+import { getInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem } from '../services/firestoreService';
 
 interface InventoryManagementViewProps {
   t: any;
@@ -33,13 +34,17 @@ interface InventoryManagementViewProps {
 }
 
 const InventoryManagementView = ({ t, threshold, onThresholdChange }: InventoryManagementViewProps) => {
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [reorderItem, setReorderItem] = useState<InventoryItem | null>(null);
+  const [deleteItem, setDeleteItem] = useState<InventoryItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredInventory, setFilteredInventory] = useState([...MOCK_INVENTORY]);
+  const [filteredInventory, setFilteredInventory] = useState<InventoryItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
     initialStock: '',
@@ -47,17 +52,57 @@ const InventoryManagementView = ({ t, threshold, onThresholdChange }: InventoryM
     reorderQuantity: ''
   });
 
+  useEffect(() => {
+    const unsubscribe = getInventory((items) => {
+      setInventory(items);
+      setFilteredInventory(items);
+      setIsLoading(false);
+    });
+    return () => unsubscribe && unsubscribe();
+  }, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate adding item
-    console.log(`Product "${formData.name}" added successfully!`, `Initial stock: ${formData.initialStock} units. Reorder point: ${formData.reorderPoint}.`);
+    const newItem: Omit<InventoryItem, 'id'> = {
+      name: formData.name,
+      currentStock: parseInt(formData.initialStock),
+      reorderPoint: parseInt(formData.reorderPoint),
+      reorderQuantity: parseInt(formData.reorderQuantity),
+      status: parseInt(formData.initialStock) <= parseInt(formData.reorderPoint) ? 'Low Stock' : 'In Stock',
+      forecastedDemand: Math.floor(Math.random() * 500) + 100,
+      lastRestockDate: new Date().toISOString().split('T')[0],
+      daysOfSupply: Math.floor(parseInt(formData.initialStock) / 10) // Mock calc
+    };
+    
+    await addInventoryItem(newItem);
     setIsModalOpen(false);
     setFormData({ name: '', initialStock: '', reorderPoint: '', reorderQuantity: '' });
+  };
+
+  const handleDelete = async () => {
+    if (deleteItem) {
+      await deleteInventoryItem(deleteItem.id);
+      setIsDeleteModalOpen(false);
+      setDeleteItem(null);
+    }
+  };
+
+  const handleReorder = async () => {
+    if (reorderItem) {
+      const newStock = reorderItem.currentStock + reorderItem.reorderQuantity;
+      await updateInventoryItem(reorderItem.id, {
+        currentStock: newStock,
+        status: 'In Stock',
+        lastRestockDate: new Date().toISOString().split('T')[0],
+        daysOfSupply: Math.floor(newStock / 10)
+      });
+      setIsReorderModalOpen(false);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -91,8 +136,8 @@ const InventoryManagementView = ({ t, threshold, onThresholdChange }: InventoryM
             </div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Items</span>
           </div>
-          <p className="text-2xl font-bold dark:text-white">1,240</p>
-          <p className="text-xs text-slate-500 mt-1">Across 5 categories</p>
+          <p className="text-2xl font-bold dark:text-white">{inventory.length}</p>
+          <p className="text-xs text-slate-500 mt-1">Across {new Set(inventory.map(i => i.name)).size} products</p>
         </div>
 
         <div className="bg-white dark:bg-slate-900 p-6 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm">
@@ -102,7 +147,7 @@ const InventoryManagementView = ({ t, threshold, onThresholdChange }: InventoryM
             </div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Stockout Risks</span>
           </div>
-          <p className="text-2xl font-bold text-rose-600">12</p>
+          <p className="text-2xl font-bold text-rose-600">{inventory.filter(i => i.status === 'Low Stock' || i.status === 'Out of Stock').length}</p>
           <p className="text-xs text-rose-500 mt-1">Requires immediate action</p>
         </div>
 
@@ -130,7 +175,7 @@ const InventoryManagementView = ({ t, threshold, onThresholdChange }: InventoryM
       </div>
 
       <ExportDataPanel 
-        data={MOCK_INVENTORY}
+        data={inventory}
         filename="inventory_report"
         title="PharmaVision Inventory Report"
         onFilter={setFilteredInventory}
@@ -261,6 +306,16 @@ const InventoryManagementView = ({ t, threshold, onThresholdChange }: InventoryM
                           <RefreshCw size={16} />
                         </button>
                       )}
+                      <button 
+                        onClick={() => {
+                          setDeleteItem(item);
+                          setIsDeleteModalOpen(true);
+                        }}
+                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-all"
+                        title="Delete Item"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -278,7 +333,7 @@ const InventoryManagementView = ({ t, threshold, onThresholdChange }: InventoryM
             <h3 className="font-bold text-lg">{t('predictedStockout')}</h3>
           </div>
           <div className="space-y-4">
-            {MOCK_INVENTORY.filter(item => item.daysOfSupply < threshold).map(item => (
+            {inventory.filter(item => item.daysOfSupply < threshold).map(item => (
               <div key={item.id} className="p-4 bg-white/5 border border-white/10 rounded-2xl">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-bold">{item.name}</span>
@@ -309,7 +364,7 @@ const InventoryManagementView = ({ t, threshold, onThresholdChange }: InventoryM
                 </div>
               </div>
             ))}
-            {MOCK_INVENTORY.filter(item => item.daysOfSupply < threshold).length === 0 && (
+            {inventory.filter(item => item.daysOfSupply < threshold).length === 0 && (
               <div className="p-8 text-center border border-dashed border-white/10 rounded-2xl">
                 <CheckCircle2 className="mx-auto text-emerald-400 mb-2" size={24} />
                 <p className="text-sm text-slate-400">No immediate stockout risks detected.</p>
@@ -324,7 +379,7 @@ const InventoryManagementView = ({ t, threshold, onThresholdChange }: InventoryM
             <h3 className="font-bold text-lg dark:text-white">{t('suggestedReorder')}</h3>
           </div>
           <div className="space-y-6">
-            {MOCK_INVENTORY.filter(item => item.status === 'Low Stock' || item.status === 'Out of Stock').map(item => (
+            {inventory.filter(item => item.status === 'Low Stock' || item.status === 'Out of Stock').map(item => (
               <div key={item.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
                 <div>
                   <p className="text-sm font-bold dark:text-white">{item.name}</p>
@@ -643,6 +698,59 @@ const InventoryManagementView = ({ t, threshold, onThresholdChange }: InventoryM
                     className="flex-1 py-3 bg-amber-600 text-white font-bold text-sm rounded-2xl hover:bg-amber-700 transition-all shadow-lg shadow-amber-200 dark:shadow-amber-900/20"
                   >
                     Confirm Order
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {isDeleteModalOpen && deleteItem && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800"
+            >
+              <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-rose-50/50 dark:bg-rose-900/10">
+                <h3 className="font-bold text-lg dark:text-white flex items-center gap-2">
+                  <Trash2 className="text-rose-600" size={20} />
+                  Confirm Deletion
+                </h3>
+                <button 
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors dark:text-slate-400"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                <div className="flex items-start gap-4 p-4 bg-rose-50 dark:bg-rose-900/10 rounded-2xl border border-rose-100 dark:border-rose-900/30">
+                  <AlertCircle className="text-rose-600 shrink-0 mt-0.5" size={20} />
+                  <div>
+                    <p className="text-sm font-bold text-rose-900 dark:text-rose-200">Delete {deleteItem.name}?</p>
+                    <p className="text-xs text-rose-700 dark:text-rose-400/80 mt-1 leading-relaxed">
+                      This action cannot be undone. All data associated with this inventory item will be permanently removed.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button 
+                    onClick={() => setIsDeleteModalOpen(false)}
+                    className="flex-1 py-3 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-bold text-sm rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleDelete}
+                    className="flex-1 py-3 bg-rose-600 text-white font-bold text-sm rounded-2xl hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 dark:shadow-rose-900/20"
+                  >
+                    Confirm Delete
                   </button>
                 </div>
               </div>

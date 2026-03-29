@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Sparkles, TrendingUp, Target, AlertCircle, RefreshCw, X, Camera, Paperclip } from 'lucide-react';
-import { GoogleGenAI } from "@google/genai";
+import { Send, Bot, User, Loader2, Sparkles, TrendingUp, Target, AlertCircle, RefreshCw, X, Camera, Paperclip, Plus } from 'lucide-react';
+import { GoogleGenAI, Type } from "@google/genai";
+import Markdown from 'react-markdown';
 import { cn } from '../lib/utils';
 import { MOCK_PRODUCTS, MOCK_REGIONS, MOCK_REPS, MOCK_PHARMACIES, COMPETITOR_DATA } from '../constants';
+import { addInventoryItem } from '../services/firestoreService';
 
 interface Message {
   id: string;
@@ -10,6 +12,10 @@ interface Message {
   content: string;
   timestamp: Date;
   image?: string;
+  action?: {
+    label: string;
+    handler: () => void;
+  };
 }
 
 const PharmaVisionAssistant = () => {
@@ -95,6 +101,9 @@ const PharmaVisionAssistant = () => {
         - Use Markdown formatting (tables, bold text, headers) to make responses beautiful and easy to read.
         - Explain WHAT THE DATA MEANS and WHAT ACTION TO TAKE.
 
+        Tool Usage:
+        - If you identify a medicine that is not in the current inventory or needs restocking, use the 'addInventoryItem' tool to suggest adding it.
+
         You have access to the following market data:
         - Products: ${JSON.stringify(MOCK_PRODUCTS)}
         - Regions: ${JSON.stringify(MOCK_REGIONS)}
@@ -104,6 +113,30 @@ const PharmaVisionAssistant = () => {
       `;
 
       let response: any;
+      const config = {
+        systemInstruction: context,
+        tools: [
+          {
+            functionDeclarations: [
+              {
+                name: "addInventoryItem",
+                description: "Suggest adding a new medicine to the inventory stock",
+                parameters: {
+                  type: Type.OBJECT,
+                  properties: {
+                    name: { type: Type.STRING, description: "Name of the medicine" },
+                    currentStock: { type: Type.NUMBER, description: "Initial stock amount" },
+                    reorderPoint: { type: Type.NUMBER, description: "Reorder threshold" },
+                    reorderQuantity: { type: Type.NUMBER, description: "Quantity to order when low" }
+                  },
+                  required: ["name", "currentStock", "reorderPoint", "reorderQuantity"]
+                }
+              }
+            ]
+          }
+        ]
+      };
+
       if (currentImage) {
         const base64Data = currentImage.split(',')[1];
         const mimeType = currentImage.split(';')[0].split(':')[1];
@@ -115,24 +148,57 @@ const PharmaVisionAssistant = () => {
               { inlineData: { data: base64Data, mimeType } }
             ]
           },
-          config: {
-            systemInstruction: context,
-          }
+          config
         });
       } else {
         const chat = ai.chats.create({
           model,
-          config: {
-            systemInstruction: context,
-          },
+          config
         });
         response = await chat.sendMessage({ message: currentInput });
       }
       
+      const functionCalls = response.functionCalls;
+      if (functionCalls) {
+        for (const call of functionCalls) {
+          if (call.name === 'addInventoryItem') {
+            const args = call.args as any;
+            const confirmMsg = `I've identified ${args.name}. Would you like to add it to the stock with an initial quantity of ${args.currentStock}?`;
+            setMessages(prev => [...prev, { 
+              id: (Date.now() + 2).toString(),
+              role: 'assistant', 
+              content: confirmMsg,
+              timestamp: new Date(),
+              action: {
+                label: "Add to Stock",
+                handler: async () => {
+                  await addInventoryItem({
+                    name: args.name,
+                    currentStock: args.currentStock,
+                    reorderPoint: args.reorderPoint,
+                    reorderQuantity: args.reorderQuantity,
+                    status: args.currentStock <= args.reorderPoint ? 'Low Stock' : 'In Stock',
+                    forecastedDemand: 0,
+                    lastRestockDate: new Date().toISOString().split('T')[0],
+                    daysOfSupply: 0
+                  });
+                  setMessages(prev => [...prev, { 
+                    id: (Date.now() + 3).toString(),
+                    role: 'assistant', 
+                    content: `Successfully added ${args.name} to inventory.`,
+                    timestamp: new Date()
+                  }]);
+                }
+              }
+            }]);
+          }
+        }
+      }
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: response.text || "I'm sorry, I couldn't process that request.",
+        content: response.text || (functionCalls ? "I've suggested some inventory updates." : "I'm sorry, I couldn't process that request."),
         timestamp: new Date()
       };
 
@@ -224,8 +290,17 @@ const PharmaVisionAssistant = () => {
                 </div>
               )}
               <div className="prose prose-sm dark:prose-invert max-w-none">
-                {msg.content}
+                <Markdown>{msg.content}</Markdown>
               </div>
+              {msg.action && (
+                <button
+                  onClick={msg.action.handler}
+                  className="mt-3 w-full py-2 bg-emerald-600 text-white rounded-xl font-bold text-xs hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
+                >
+                  <Plus size={14} />
+                  {msg.action.label}
+                </button>
+              )}
               <div className={cn(
                 "mt-2 text-[10px] opacity-50",
                 msg.role === 'user' ? "text-right" : ""

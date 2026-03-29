@@ -50,11 +50,14 @@ export interface Representative {
 }
 
 export interface DashboardStats {
-  totalSales: number;
-  salesGrowth: number;
-  activeReps: number;
+  totalRevenue: number;
+  revenueChange: string;
+  growth: number;
+  growthChange: string;
   topProduct: string;
-  lowStockAlerts: number;
+  topProductChange: string;
+  marketHealth: number;
+  marketHealthChange: string;
 }
 
 export interface MarketAnalysis {
@@ -82,4 +85,14 @@ export interface CompetitorData {
   name: string;
   marketShare: number;
   growth: number;
+}
+
+export interface SalesRecord {
+  id: string;
+  productId: string;
+  productName: string;
+  amount: number;
+  quantity: number;
+  timestamp: string;
+  region: string;
 }

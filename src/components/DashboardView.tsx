@@ -1,7 +1,7 @@
 import React from 'react';
 import { TrendingUp, Activity, Package, ShieldCheck, AlertTriangle, BrainCircuit, ArrowUpRight, CheckCircle2 } from 'lucide-react';
 import StatCard from './StatCard';
-import { MarketAnalysis, Alert } from '../types';
+import { MarketAnalysis, Alert, DashboardStats } from '../types';
 import { cn } from '../lib/utils';
 
 interface DashboardViewProps {
@@ -9,16 +9,45 @@ interface DashboardViewProps {
   loading: boolean;
   t: any;
   alerts: Alert[];
+  stats: DashboardStats | null;
 }
 
-const DashboardView = ({ analysis, loading, t, alerts }: DashboardViewProps) => (
+const DashboardView = ({ analysis, loading, t, alerts, stats }: DashboardViewProps) => (
   <div className="space-y-8">
     {/* KPI Row */}
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      <StatCard title={t('totalRevenue')} value="$4,250,000" change="+18.2%" trend="up" icon={TrendingUp} t={t} />
-      <StatCard title={t('growth')} value="12.4%" change="+2.1%" trend="up" icon={Activity} t={t} />
-      <StatCard title={t('topProduct')} value="Lipitor 20mg" change="+5.4%" trend="up" icon={Package} t={t} />
-      <StatCard title={t('marketHealth')} value="92%" change="+1.2%" trend="up" icon={ShieldCheck} t={t} />
+      <StatCard 
+        title={t('totalRevenue')} 
+        value={stats ? `$${stats.totalRevenue.toLocaleString()}` : "$0"} 
+        change={stats?.revenueChange || "+0%"} 
+        trend="up" 
+        icon={TrendingUp} 
+        t={t} 
+      />
+      <StatCard 
+        title={t('growth')} 
+        value={stats ? `${stats.growth}%` : "0%"} 
+        change={stats?.growthChange || "+0%"} 
+        trend="up" 
+        icon={Activity} 
+        t={t} 
+      />
+      <StatCard 
+        title={t('topProduct')} 
+        value={stats?.topProduct || "N/A"} 
+        change={stats?.topProductChange || "+0%"} 
+        trend="up" 
+        icon={Package} 
+        t={t} 
+      />
+      <StatCard 
+        title={t('marketHealth')} 
+        value={stats ? `${stats.marketHealth}%` : "0%"} 
+        change={stats?.marketHealthChange || "+0%"} 
+        trend="up" 
+        icon={ShieldCheck} 
+        t={t} 
+      />
     </div>
 
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

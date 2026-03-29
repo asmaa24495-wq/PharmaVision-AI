@@ -28,11 +28,13 @@ import {
   Camera,
   Paperclip,
   X,
-  LogOut
+  LogOut,
+  Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
+import Markdown from 'react-markdown';
 import { cn } from './lib/utils';
 import { useAuth } from './contexts/AuthContext';
 import LoginPage from './components/LoginPage';
@@ -46,7 +48,7 @@ import {
   INVENTORY_THRESHOLD
 } from './constants';
 import { getDetailedAnalysis } from './services/aiService';
-import { MarketAnalysis } from './types';
+import { MarketAnalysis, InventoryItem, DashboardStats, SalesRecord, Alert } from './types';
 import SettingsView from './components/SettingsView';
 import SidebarItem from './components/SidebarItem';
 import DashboardView from './components/DashboardView';
@@ -63,7 +65,8 @@ import CompetitorsView from './components/CompetitorsView';
 import SimulationsView from './components/SimulationsView';
 import InventoryManagementView from './components/InventoryManagementView';
 import { generateInventoryAlerts } from './services/alertService';
-import { Alert } from './types';
+
+import { getInventory, getDashboardStats, updateDashboardStats, addInventoryItem, getSales, addSale } from './services/firestoreService';
 
 // --- Main App ---
 
@@ -86,10 +89,13 @@ export default function App() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [inventoryThreshold, setInventoryThreshold] = useState(INVENTORY_THRESHOLD);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [sales, setSales] = useState<SalesRecord[]>([]);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [emailEnabled, setEmailEnabled] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const [bubbleMessages, setBubbleMessages] = useState([
+  const [bubbleMessages, setBubbleMessages] = useState<{ role: string; content: string; image?: string | null; action?: any }[]>([
     { role: 'assistant', content: "مرحباً دكتور أحمد. أنا PharmaVision AI، نظام الاستخبارات الاستراتيجي الخاص بك. لقد قمت بتحليل تحركات السوق الأخيرة في القاهرة. كيف يمكنني مساعدتك في تحسين الأداء اليوم؟" }
   ]);
   const [bubbleInput, setBubbleInput] = useState('');
@@ -133,9 +139,69 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const newAlerts = generateInventoryAlerts(MOCK_INVENTORY, inventoryThreshold);
+    if (!user) return;
+
+    const unsubInventory = getInventory((items) => {
+      setInventory(items);
+      if (items.length === 0) {
+        // Initialize with mock data if empty
+        MOCK_INVENTORY.forEach(item => addInventoryItem(item));
+      }
+    });
+
+    const unsubSales = getSales((data) => {
+      setSales(data);
+      if (data.length === 0) {
+        // Initialize with mock sales
+        const mockSales = [
+          { productId: 'lipitor-20mg', productName: 'Lipitor 20mg', amount: 12500, quantity: 50, timestamp: new Date().toISOString(), region: 'Cairo' },
+          { productId: 'amoxil-500mg', productName: 'Amoxil 500mg', amount: 8400, quantity: 120, timestamp: new Date().toISOString(), region: 'Alexandria' },
+          { productId: 'panadol-extra', productName: 'Panadol Extra', amount: 3200, quantity: 300, timestamp: new Date().toISOString(), region: 'Giza' }
+        ];
+        mockSales.forEach(sale => addSale(sale));
+      }
+    });
+
+    const unsubStats = getDashboardStats((data) => {
+      setStats(data);
+      if (!data) {
+        // Initialize with mock data if empty
+        updateDashboardStats({
+          totalRevenue: 4250000,
+          revenueChange: "+18.2%",
+          growth: 12.4,
+          growthChange: "+2.1%",
+          topProduct: "Lipitor 20mg",
+          topProductChange: "+5.4%",
+          marketHealth: 92,
+          marketHealthChange: "+1.2%"
+        });
+      }
+    });
+
+    return () => {
+      unsubInventory && unsubInventory();
+      unsubStats && unsubStats();
+      unsubSales && unsubSales();
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (sales.length > 0 && stats) {
+      const totalRev = sales.reduce((acc, sale) => acc + sale.amount, 0);
+      // We only update if the calculated revenue is significantly different or we want to reflect current sales
+      // For this demo, we'll just update the totalRevenue if it's different from the base mock
+      if (totalRev > 0 && totalRev !== stats.totalRevenue) {
+         // In a real app, we'd calculate growth and other things too
+         // updateDashboardStats({ totalRevenue: totalRev });
+      }
+    }
+  }, [sales, stats]);
+
+  useEffect(() => {
+    const newAlerts = generateInventoryAlerts(inventory, inventoryThreshold);
     setAlerts(newAlerts);
-  }, [inventoryThreshold]);
+  }, [inventory, inventoryThreshold]);
 
   const toggleLanguage = () => {
     const nextLang = i18n.language === 'en' ? 'ar' : 'en';
@@ -220,11 +286,67 @@ Style Guidelines:
 - Professional, expert, supportive tone.
 - Arabic-language first (with technical English terms).
 - Use Markdown formatting (tables, bold text, headers) to make responses beautiful and easy to read.
-- Explain WHAT THE DATA MEANS and WHAT ACTION TO TAKE.`,
+- Explain WHAT THE DATA MEANS and WHAT ACTION TO TAKE.
+
+Tool Usage:
+- If you identify a medicine that is not in the current inventory or needs restocking, use the 'addInventoryItem' tool to suggest adding it.`,
+          tools: [
+            {
+              functionDeclarations: [
+                {
+                  name: "addInventoryItem",
+                  description: "Suggest adding a new medicine to the inventory stock",
+                  parameters: {
+                    type: Type.OBJECT,
+                    properties: {
+                      name: { type: Type.STRING, description: "Name of the medicine" },
+                      currentStock: { type: Type.NUMBER, description: "Initial stock amount" },
+                      reorderPoint: { type: Type.NUMBER, description: "Reorder threshold" },
+                      reorderQuantity: { type: Type.NUMBER, description: "Quantity to order when low" }
+                    },
+                    required: ["name", "currentStock", "reorderPoint", "reorderQuantity"]
+                  }
+                }
+              ]
+            }
+          ]
         }
       });
       
-      const assistantMsg = { role: 'assistant', content: response.text || "I'm sorry, I couldn't process that." };
+      const functionCalls = response.functionCalls;
+      if (functionCalls) {
+        for (const call of functionCalls) {
+          if (call.name === 'addInventoryItem') {
+            const args = call.args as any;
+            const confirmMsg = `I've identified ${args.name}. Would you like to add it to the stock with an initial quantity of ${args.currentStock}?`;
+            setBubbleMessages(prev => [...prev, { 
+              role: 'assistant', 
+              content: confirmMsg,
+              action: {
+                label: "Add to Stock",
+                handler: async () => {
+                  await addInventoryItem({
+                    name: args.name,
+                    currentStock: args.currentStock,
+                    reorderPoint: args.reorderPoint,
+                    reorderQuantity: args.reorderQuantity,
+                    status: args.currentStock <= args.reorderPoint ? 'Low Stock' : 'In Stock',
+                    forecastedDemand: 0,
+                    lastRestockDate: new Date().toISOString().split('T')[0],
+                    daysOfSupply: 0
+                  });
+                  setBubbleMessages(prev => [...prev, { role: 'assistant', content: `Successfully added ${args.name} to inventory.` }]);
+                }
+              }
+            } as any]);
+          }
+        }
+      }
+
+      const assistantMsg = { 
+        role: 'assistant', 
+        content: response.text || (functionCalls ? "I've suggested some inventory updates." : "I'm sorry, I couldn't process that.") 
+      };
       setBubbleMessages(prev => [...prev, assistantMsg]);
     } catch (error) {
       console.error("Bubble AI Error:", error);
@@ -507,7 +629,7 @@ Style Guidelines:
               >
                 <Routes location={location}>
                   <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                  <Route path="/dashboard" element={<DashboardView analysis={analysis} loading={loadingAnalysis} t={t} alerts={alerts} />} />
+                  <Route path="/dashboard" element={<DashboardView analysis={analysis} loading={loadingAnalysis} t={t} alerts={alerts} stats={stats} />} />
                   <Route path="/sales" element={
                     <SalesAnalysisView 
                       t={t} 
@@ -830,7 +952,18 @@ Style Guidelines:
                         <img src={msg.image} alt="Uploaded" className="max-w-full h-auto" />
                       </div>
                     )}
-                    <span>{msg.content}</span>
+                    <span>
+                      <Markdown>{msg.content}</Markdown>
+                    </span>
+                    {(msg as any).action && (
+                      <button
+                        onClick={(msg as any).action.handler}
+                        className="mt-3 w-full py-2 bg-emerald-600 text-white rounded-xl font-bold text-[10px] hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
+                      >
+                        <Plus size={12} />
+                        {(msg as any).action.label}
+                      </button>
+                    )}
                   </div>
                 ))}
                 {isBubbleLoading && (
