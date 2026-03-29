@@ -110,7 +110,8 @@ const resources = {
       "products": "Products",
       "pharmacies": "Pharmacies",
       "reps": "Medical Representatives",
-      "startSearching": "Start typing to search enterprise data..."
+      "startSearching": "Start typing to search enterprise data...",
+      "logout": "Logout"
     }
   },
   ar: {
@@ -220,7 +221,8 @@ const resources = {
       "products": "المنتجات",
       "pharmacies": "الصيدليات",
       "reps": "المندوبين الطبيين",
-      "startSearching": "ابدأ الكتابة للبحث في بيانات المؤسسة..."
+      "startSearching": "ابدأ الكتابة للبحث في بيانات المؤسسة...",
+      "logout": "تسجيل الخروج"
     }
   }
 };

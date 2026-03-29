@@ -29,7 +29,7 @@ interface SettingsViewProps {
     email: string;
     avatar: string;
   };
-  setUserProfile: (profile: any) => void;
+  setUserProfile?: (profile: any) => void;
   pushEnabled: boolean;
   setPushEnabled: (val: boolean) => void;
   emailEnabled: boolean;
@@ -109,7 +109,9 @@ export default function SettingsView({
   };
 
   const handleSave = () => {
-    setUserProfile(localProfile);
+    if (setUserProfile) {
+      setUserProfile(localProfile);
+    }
     setPushEnabled(localPushEnabled);
     setEmailEnabled(localEmailEnabled);
     setTwoFactorEnabled(localTwoFactorEnabled);

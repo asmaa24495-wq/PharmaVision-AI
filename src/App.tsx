@@ -27,12 +27,15 @@ import {
   Loader2,
   Camera,
   Paperclip,
-  X
+  X,
+  LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { GoogleGenAI } from "@google/genai";
 import { cn } from './lib/utils';
+import { useAuth } from './contexts/AuthContext';
+import LoginPage from './components/LoginPage';
 import { 
   MOCK_PRODUCTS, 
   MOCK_REGIONS, 
@@ -68,6 +71,7 @@ export default function App() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, loading, logout } = useAuth();
   
   // Derive activeTab from location.pathname
   const activeTab = location.pathname.split('/')[1] || 'dashboard';
@@ -92,12 +96,26 @@ export default function App() {
   const [isBubbleLoading, setIsBubbleLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [userProfile, setUserProfile] = useState({
-    name: 'Dr. Ahmed Hassan',
-    title: 'Chief Strategist',
-    email: 'sooo1421997@gmail.com',
-    avatar: 'https://picsum.photos/seed/strategist/200/200'
-  });
+
+  // Auth Protection
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <Loader2 size={48} className="text-blue-600 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginPage />;
+  }
+
+  const userProfile = {
+    name: user.displayName || 'Enterprise User',
+    title: 'Strategic Analyst',
+    email: user.email || '',
+    avatar: user.photoURL || 'https://picsum.photos/seed/strategist/200/200'
+  };
 
   const isRtl = i18n.language === 'ar';
 
@@ -306,8 +324,15 @@ Style Guidelines:
           </div>
         </div>
 
-        <div className="p-4 border-t border-slate-100 dark:border-slate-800">
+        <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
           <SidebarItem icon={Settings} label={t('settings')} active={activeTab === 'settings'} onClick={() => handleSidebarClick('settings')} />
+          <button 
+            onClick={logout}
+            className="w-full flex items-center gap-3 px-4 py-3 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition-all font-bold text-sm"
+          >
+            <LogOut size={20} />
+            <span>{t('logout')}</span>
+          </button>
         </div>
       </aside>
 
@@ -623,7 +648,6 @@ Style Guidelines:
                       setDarkMode={setDarkMode} 
                       isRtl={isRtl} 
                       userProfile={userProfile}
-                      setUserProfile={setUserProfile}
                       pushEnabled={pushEnabled}
                       setPushEnabled={setPushEnabled}
                       emailEnabled={emailEnabled}
