@@ -12,7 +12,7 @@ import {
   getDocFromServer
 } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
-import { InventoryItem, DashboardStats, SalesRecord } from '../types';
+import { InventoryItem, DashboardStats, SalesRecord, UserProfile } from '../types';
 
 enum OperationType {
   CREATE = 'create',
@@ -158,6 +158,34 @@ export const addSale = async (sale: Omit<SalesRecord, 'id'>) => {
   try {
     await setDoc(doc(db, path, id), { ...sale, id });
     return id;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+};
+
+// --- User Profiles ---
+
+export const getUserProfile = (uid: string, callback: (profile: UserProfile | null) => void) => {
+  const path = `users/${uid}`;
+  try {
+    return onSnapshot(doc(db, 'users', uid), (snapshot) => {
+      if (snapshot.exists()) {
+        callback(snapshot.data() as UserProfile);
+      } else {
+        callback(null);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, path);
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, path);
+  }
+};
+
+export const updateUserProfile = async (uid: string, data: Partial<UserProfile>) => {
+  const path = `users/${uid}`;
+  try {
+    await setDoc(doc(db, 'users', uid), data, { merge: true });
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }

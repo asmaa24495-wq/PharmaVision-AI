@@ -48,7 +48,7 @@ import {
   INVENTORY_THRESHOLD
 } from './constants';
 import { getDetailedAnalysis } from './services/aiService';
-import { MarketAnalysis, InventoryItem, DashboardStats, SalesRecord, Alert } from './types';
+import { MarketAnalysis, InventoryItem, DashboardStats, SalesRecord, Alert, UserProfile } from './types';
 import SettingsView from './components/SettingsView';
 import SidebarItem from './components/SidebarItem';
 import DashboardView from './components/DashboardView';
@@ -66,7 +66,7 @@ import SimulationsView from './components/SimulationsView';
 import InventoryManagementView from './components/InventoryManagementView';
 import { generateInventoryAlerts } from './services/alertService';
 
-import { getInventory, getDashboardStats, updateDashboardStats, addInventoryItem, getSales, addSale } from './services/firestoreService';
+import { getInventory, getDashboardStats, updateDashboardStats, addInventoryItem, getSales, addSale, getUserProfile, updateUserProfile } from './services/firestoreService';
 
 // --- Main App ---
 
@@ -92,8 +92,20 @@ export default function App() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [sales, setSales] = useState<SalesRecord[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [pushEnabled, setPushEnabled] = useState(false);
-  const [emailEnabled, setEmailEnabled] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile>({
+    uid: '',
+    email: '',
+    name: 'د. أحمد محمود',
+    title: 'مدير الاستراتيجية الإقليمي',
+    avatar: 'https://picsum.photos/seed/doc/200/200',
+    role: 'user',
+    darkMode: false,
+    pushEnabled: true,
+    emailEnabled: true,
+    twoFactorEnabled: false
+  });
+  const [pushEnabled, setPushEnabled] = useState(true);
+  const [emailEnabled, setEmailEnabled] = useState(true);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [bubbleMessages, setBubbleMessages] = useState<{ role: string; content: string; image?: string | null; action?: any }[]>([
     { role: 'assistant', content: "مرحباً دكتور أحمد. أنا PharmaVision AI، نظام الاستخبارات الاستراتيجي الخاص بك. لقد قمت بتحليل تحركات السوق الأخيرة في القاهرة. كيف يمكنني مساعدتك في تحسين الأداء اليوم؟" }
@@ -179,12 +191,45 @@ export default function App() {
       }
     });
 
+    const unsubProfile = getUserProfile(user.uid, (profile) => {
+      if (profile) {
+        setUserProfile(profile);
+        setDarkMode(profile.darkMode);
+        setPushEnabled(profile.pushEnabled);
+        setEmailEnabled(profile.emailEnabled);
+        setTwoFactorEnabled(profile.twoFactorEnabled);
+      } else {
+        // Initialize profile if it doesn't exist
+        const initialProfile: UserProfile = {
+          uid: user.uid,
+          email: user.email || '',
+          name: user.displayName || 'د. أحمد محمود',
+          title: 'مدير الاستراتيجية الإقليمي',
+          avatar: user.photoURL || 'https://picsum.photos/seed/doc/200/200',
+          role: 'user',
+          darkMode: false,
+          pushEnabled: true,
+          emailEnabled: true,
+          twoFactorEnabled: false
+        };
+        updateUserProfile(user.uid, initialProfile);
+      }
+    });
+
     return () => {
       unsubInventory && unsubInventory();
       unsubStats && unsubStats();
       unsubSales && unsubSales();
+      unsubProfile && unsubProfile();
     };
   }, [user]);
+
+  const handleSetDarkMode = (val: boolean) => {
+    setDarkMode(val);
+    if (user) {
+      updateUserProfile(user.uid, { darkMode: val });
+    }
+  };
 
   useEffect(() => {
     if (sales.length > 0 && stats) {
@@ -374,13 +419,6 @@ Tool Usage:
     return <LoginPage />;
   }
 
-  const userProfile = {
-    name: user.displayName || 'Enterprise User',
-    title: 'Strategic Analyst',
-    email: user.email || '',
-    avatar: user.photoURL || 'https://picsum.photos/seed/strategist/200/200'
-  };
-
   return (
     <div className={cn(
       "flex h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 overflow-hidden transition-colors duration-300",
@@ -522,7 +560,7 @@ Tool Usage:
                 <Settings size={20} />
               </button>
               <button 
-                onClick={() => setDarkMode(!darkMode)}
+                onClick={() => handleSetDarkMode(!darkMode)}
                 className="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                 title={t('themeMode')}
               >
@@ -776,15 +814,27 @@ Tool Usage:
                   <Route path="/settings" element={
                     <SettingsView 
                       darkMode={darkMode} 
-                      setDarkMode={setDarkMode} 
+                      setDarkMode={handleSetDarkMode} 
                       isRtl={isRtl} 
                       userProfile={userProfile}
+                      setUserProfile={(profile) => {
+                        if (user) updateUserProfile(user.uid, profile);
+                      }}
                       pushEnabled={pushEnabled}
-                      setPushEnabled={setPushEnabled}
+                      setPushEnabled={(val) => {
+                        setPushEnabled(val);
+                        if (user) updateUserProfile(user.uid, { pushEnabled: val });
+                      }}
                       emailEnabled={emailEnabled}
-                      setEmailEnabled={setEmailEnabled}
+                      setEmailEnabled={(val) => {
+                        setEmailEnabled(val);
+                        if (user) updateUserProfile(user.uid, { emailEnabled: val });
+                      }}
                       twoFactorEnabled={twoFactorEnabled}
-                      setTwoFactorEnabled={setTwoFactorEnabled}
+                      setTwoFactorEnabled={(val) => {
+                        setTwoFactorEnabled(val);
+                        if (user) updateUserProfile(user.uid, { twoFactorEnabled: val });
+                      }}
                     />
                   } />
                   <Route path="*" element={<Navigate to="/dashboard" replace />} />

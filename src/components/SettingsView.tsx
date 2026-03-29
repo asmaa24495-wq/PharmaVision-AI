@@ -16,7 +16,7 @@ import {
   Camera
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 
 interface SettingsViewProps {
@@ -100,6 +100,7 @@ export default function SettingsView({
   const [localPushEnabled, setLocalPushEnabled] = React.useState(pushEnabled);
   const [localEmailEnabled, setLocalEmailEnabled] = React.useState(emailEnabled);
   const [localTwoFactorEnabled, setLocalTwoFactorEnabled] = React.useState(twoFactorEnabled);
+  const [showToast, setShowToast] = React.useState<{ show: boolean, message: string, type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
   
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -108,15 +109,21 @@ export default function SettingsView({
     i18n.changeLanguage(nextLang);
   };
 
-  const handleSave = () => {
-    if (setUserProfile) {
-      setUserProfile(localProfile);
+  const handleSave = async () => {
+    try {
+      if (setUserProfile) {
+        await setUserProfile(localProfile);
+      }
+      if (setPushEnabled) await setPushEnabled(localPushEnabled);
+      if (setEmailEnabled) await setEmailEnabled(localEmailEnabled);
+      if (setTwoFactorEnabled) await setTwoFactorEnabled(localTwoFactorEnabled);
+      
+      setShowToast({ show: true, message: isRtl ? 'تم حفظ التغييرات بنجاح' : 'Settings saved successfully', type: 'success' });
+      setTimeout(() => setShowToast({ ...showToast, show: false }), 3000);
+    } catch (error) {
+      setShowToast({ show: true, message: isRtl ? 'حدث خطأ أثناء الحفظ' : 'Error saving settings', type: 'error' });
+      setTimeout(() => setShowToast({ ...showToast, show: false }), 3000);
     }
-    setPushEnabled(localPushEnabled);
-    setEmailEnabled(localEmailEnabled);
-    setTwoFactorEnabled(localTwoFactorEnabled);
-    
-    console.log('Settings saved successfully');
   };
 
   const handleReset = () => {
@@ -338,6 +345,24 @@ export default function SettingsView({
           </button>
         </div>
       </div>
+      
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {showToast.show && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className={cn(
+              "fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-[100]",
+              showToast.type === 'success' ? "bg-emerald-600 text-white" : "bg-rose-600 text-white"
+            )}
+          >
+            {showToast.type === 'success' ? <Check size={20} /> : <Info size={20} />}
+            <span className="font-bold text-sm">{showToast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

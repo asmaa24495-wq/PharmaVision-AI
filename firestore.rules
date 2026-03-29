@@ -65,10 +65,11 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isAuthenticated() && request.auth.uid == userId;
       allow create: if isAuthenticated() && request.auth.uid == userId && 
-                    request.resource.data.keys().hasOnly(['uid', 'email', 'displayName', 'role']) &&
+                    request.resource.data.keys().hasAll(['uid', 'email', 'name', 'role']) &&
                     request.resource.data.role == 'user';
       allow update: if isAuthenticated() && request.auth.uid == userId && 
-                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'photoURL']);
+                    request.resource.data.uid == resource.data.uid &&
+                    request.resource.data.role == resource.data.role;
     }
 
     match /inventory/{itemId} {

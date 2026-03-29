@@ -46,9 +46,31 @@
         "region": { "type": "string" }
       },
       "required": ["id", "productId", "amount", "quantity", "timestamp"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User profile and settings",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "title": { "type": "string" },
+        "avatar": { "type": "string" },
+        "role": { "type": "string" },
+        "darkMode": { "type": "boolean" },
+        "pushEnabled": { "type": "boolean" },
+        "emailEnabled": { "type": "boolean" },
+        "twoFactorEnabled": { "type": "boolean" }
+      },
+      "required": ["uid", "email", "name"]
     }
   },
   "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Collection of user profiles"
+    },
     "/inventory/{itemId}": {
       "schema": "InventoryItem",
       "description": "Collection of inventory items"

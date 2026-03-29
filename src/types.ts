@@ -96,3 +96,16 @@ export interface SalesRecord {
   timestamp: string;
   region: string;
 }
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  name: string;
+  title: string;
+  avatar: string;
+  role: string;
+  darkMode: boolean;
+  pushEnabled: boolean;
+  emailEnabled: boolean;
+  twoFactorEnabled: boolean;
+}
