@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'react-hot-toast';
 import { InventoryItem } from '../types';
 import ExportDataPanel from './ExportDataPanel';
 import { getInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem } from '../services/firestoreService';
@@ -36,6 +37,7 @@ interface InventoryManagementViewProps {
 const InventoryManagementView = ({ t, threshold, onThresholdChange }: InventoryManagementViewProps) => {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -68,40 +70,70 @@ const InventoryManagementView = ({ t, threshold, onThresholdChange }: InventoryM
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newItem: Omit<InventoryItem, 'id'> = {
-      name: formData.name,
-      currentStock: parseInt(formData.initialStock),
-      reorderPoint: parseInt(formData.reorderPoint),
-      reorderQuantity: parseInt(formData.reorderQuantity),
-      status: parseInt(formData.initialStock) <= parseInt(formData.reorderPoint) ? 'Low Stock' : 'In Stock',
-      forecastedDemand: Math.floor(Math.random() * 500) + 100,
-      lastRestockDate: new Date().toISOString().split('T')[0],
-      daysOfSupply: Math.floor(parseInt(formData.initialStock) / 10) // Mock calc
-    };
-    
-    await addInventoryItem(newItem);
-    setIsModalOpen(false);
-    setFormData({ name: '', initialStock: '', reorderPoint: '', reorderQuantity: '' });
+    const loadingToast = toast.loading(isEditMode ? 'Updating product...' : 'Adding product...');
+    try {
+      if (isEditMode && selectedItem) {
+        await updateInventoryItem(selectedItem.id, {
+          name: formData.name,
+          currentStock: parseInt(formData.initialStock),
+          reorderPoint: parseInt(formData.reorderPoint),
+          reorderQuantity: parseInt(formData.reorderQuantity),
+          status: parseInt(formData.initialStock) <= parseInt(formData.reorderPoint) ? 'Low Stock' : 'In Stock',
+          daysOfSupply: Math.floor(parseInt(formData.initialStock) / 10)
+        });
+        toast.success('Product updated successfully', { id: loadingToast });
+      } else {
+        const newItem: Omit<InventoryItem, 'id'> = {
+          name: formData.name,
+          currentStock: parseInt(formData.initialStock),
+          reorderPoint: parseInt(formData.reorderPoint),
+          reorderQuantity: parseInt(formData.reorderQuantity),
+          status: parseInt(formData.initialStock) <= parseInt(formData.reorderPoint) ? 'Low Stock' : 'In Stock',
+          forecastedDemand: Math.floor(Math.random() * 500) + 100,
+          lastRestockDate: new Date().toISOString().split('T')[0],
+          daysOfSupply: Math.floor(parseInt(formData.initialStock) / 10)
+        };
+        await addInventoryItem(newItem);
+        toast.success('Product added successfully', { id: loadingToast });
+      }
+      setIsModalOpen(false);
+      setIsEditMode(false);
+      setFormData({ name: '', initialStock: '', reorderPoint: '', reorderQuantity: '' });
+    } catch (error) {
+      toast.error('Failed to save product', { id: loadingToast });
+    }
   };
 
   const handleDelete = async () => {
     if (deleteItem) {
-      await deleteInventoryItem(deleteItem.id);
-      setIsDeleteModalOpen(false);
-      setDeleteItem(null);
+      const loadingToast = toast.loading('Deleting product...');
+      try {
+        await deleteInventoryItem(deleteItem.id);
+        toast.success('Product deleted successfully', { id: loadingToast });
+        setIsDeleteModalOpen(false);
+        setDeleteItem(null);
+      } catch (error) {
+        toast.error('Failed to delete product', { id: loadingToast });
+      }
     }
   };
 
   const handleReorder = async () => {
     if (reorderItem) {
-      const newStock = reorderItem.currentStock + reorderItem.reorderQuantity;
-      await updateInventoryItem(reorderItem.id, {
-        currentStock: newStock,
-        status: 'In Stock',
-        lastRestockDate: new Date().toISOString().split('T')[0],
-        daysOfSupply: Math.floor(newStock / 10)
-      });
-      setIsReorderModalOpen(false);
+      const loadingToast = toast.loading('Processing reorder...');
+      try {
+        const newStock = reorderItem.currentStock + reorderItem.reorderQuantity;
+        await updateInventoryItem(reorderItem.id, {
+          currentStock: newStock,
+          status: 'In Stock',
+          lastRestockDate: new Date().toISOString().split('T')[0],
+          daysOfSupply: Math.floor(newStock / 10)
+        });
+        toast.success(`Reorder for ${reorderItem.name} confirmed!`, { id: loadingToast });
+        setIsReorderModalOpen(false);
+      } catch (error) {
+        toast.error('Failed to process reorder', { id: loadingToast });
+      }
     }
   };
 
@@ -219,7 +251,11 @@ const InventoryManagementView = ({ t, threshold, onThresholdChange }: InventoryM
               <Calendar size={18} />
             </button>
             <button 
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => {
+                setIsEditMode(false);
+                setFormData({ name: '', initialStock: '', reorderPoint: '', reorderQuantity: '' });
+                setIsModalOpen(true);
+              }}
               className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-all flex items-center gap-2"
             >
               <Plus size={14} />
@@ -284,6 +320,23 @@ const InventoryManagementView = ({ t, threshold, onThresholdChange }: InventoryM
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => {
+                          setSelectedItem(item);
+                          setIsEditMode(true);
+                          setFormData({
+                            name: item.name,
+                            initialStock: item.currentStock.toString(),
+                            reorderPoint: item.reorderPoint.toString(),
+                            reorderQuantity: item.reorderQuantity.toString()
+                          });
+                          setIsModalOpen(true);
+                        }}
+                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-all"
+                        title="Edit Item"
+                      >
+                        <RefreshCw size={16} className="rotate-90" />
+                      </button>
                       <button 
                         onClick={() => {
                           setSelectedItem(item);
@@ -414,7 +467,7 @@ const InventoryManagementView = ({ t, threshold, onThresholdChange }: InventoryM
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
                 <h3 className="font-bold text-lg dark:text-white flex items-center gap-2">
                   <Package className="text-blue-600" size={20} />
-                  Add New Inventory Item
+                  {isEditMode ? 'Edit Inventory Item' : 'Add New Inventory Item'}
                 </h3>
                 <button 
                   onClick={() => setIsModalOpen(false)}
@@ -490,7 +543,7 @@ const InventoryManagementView = ({ t, threshold, onThresholdChange }: InventoryM
                     type="submit"
                     className="flex-1 py-3 bg-blue-600 text-white font-bold text-sm rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
                   >
-                    Add Product
+                    {isEditMode ? 'Update Product' : 'Add Product'}
                   </button>
                 </div>
               </form>
@@ -691,10 +744,7 @@ const InventoryManagementView = ({ t, threshold, onThresholdChange }: InventoryM
                     Cancel
                   </button>
                   <button 
-                    onClick={() => {
-                      console.log(`Reorder for ${reorderItem.name} initiated!`, `Order for ${reorderItem.reorderQuantity} units has been placed.`);
-                      setIsReorderModalOpen(false);
-                    }}
+                    onClick={handleReorder}
                     className="flex-1 py-3 bg-amber-600 text-white font-bold text-sm rounded-2xl hover:bg-amber-700 transition-all shadow-lg shadow-amber-200 dark:shadow-amber-900/20"
                   >
                     Confirm Order

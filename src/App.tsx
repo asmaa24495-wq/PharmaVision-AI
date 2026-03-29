@@ -66,6 +66,7 @@ import SimulationsView from './components/SimulationsView';
 import InventoryManagementView from './components/InventoryManagementView';
 import { generateInventoryAlerts } from './services/alertService';
 
+import { Toaster } from 'react-hot-toast';
 import { getInventory, getDashboardStats, updateDashboardStats, addInventoryItem, getSales, addSale, getUserProfile, updateUserProfile } from './services/firestoreService';
 
 // --- Main App ---
@@ -251,6 +252,7 @@ export default function App() {
   useEffect(() => {
     setIsSearchOpen(false);
     setSearchQuery('');
+    setIsSidebarOpen(false);
   }, [location]);
 
   const toggleLanguage = () => {
@@ -507,6 +509,7 @@ Tool Usage:
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden w-full">
+        <Toaster position="top-center" reverseOrder={false} />
         {/* Header */}
         <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 lg:px-8 flex items-center justify-between z-20">
           <div className="flex items-center gap-4">

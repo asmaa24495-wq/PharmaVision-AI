@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle, Bell, Info, Clock, CheckCircle2, Sparkles } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { Alert } from '../types';
 import { cn } from '../lib/utils';
 
@@ -126,7 +127,10 @@ const SmartAlertsView = ({ t, alerts }: SmartAlertsViewProps) => {
                 {alert.actionLabel && (
                   <div className="mt-4 flex gap-3">
                     <button 
-                      onClick={() => console.log(`Action: ${alert.actionLabel}`, `Initiating ${alert.actionLabel} for ${alert.title}`)}
+                      onClick={() => {
+                        toast.success(`Action: ${alert.actionLabel} initiated for ${alert.title}`);
+                        console.log(`Action: ${alert.actionLabel}`, `Initiating ${alert.actionLabel} for ${alert.title}`);
+                      }}
                       className={cn(
                         "px-4 py-2 text-white text-xs font-bold rounded-lg transition-all hover:scale-105 active:scale-95",
                         alert.type === 'critical' ? 'bg-rose-600 hover:bg-rose-700' : 
@@ -137,7 +141,10 @@ const SmartAlertsView = ({ t, alerts }: SmartAlertsViewProps) => {
                       {alert.actionLabel}
                     </button>
                     <button 
-                      onClick={() => console.log('Alert ignored', `Alert "${alert.title}" has been archived.`)}
+                      onClick={() => {
+                        toast.success(`Alert "${alert.title}" has been archived.`);
+                        console.log('Alert ignored', `Alert "${alert.title}" has been archived.`);
+                      }}
                       className="px-4 py-2 border border-slate-200 dark:border-slate-800 text-xs font-bold rounded-lg dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
                     >
                       Ignore

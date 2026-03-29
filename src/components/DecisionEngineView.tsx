@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrainCircuit, Play, CheckCircle2, TrendingUp, Calendar, Target, Zap, Loader2, RefreshCw, AlertTriangle, ShieldCheck, ArrowRight } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { MarketAnalysis } from '../types';
 import { cn } from '../lib/utils';
 
@@ -56,7 +57,10 @@ const DecisionEngineView = ({ t, analysis, loading, onRefresh }: DecisionEngineV
               </div>
             </div>
             <button 
-              onClick={onRefresh}
+              onClick={() => {
+                onRefresh();
+                toast.success('Simulation started...');
+              }}
               disabled={loading}
               className="px-8 py-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-2xl font-bold transition-all flex items-center justify-center gap-3 shadow-lg shadow-blue-900/40 group active:scale-95"
             >
@@ -132,7 +136,10 @@ const DecisionEngineView = ({ t, analysis, loading, onRefresh }: DecisionEngineV
                   </div>
                 </div>
                 <button 
-                  onClick={() => console.log(`Executing Strategy: ${decision.title}`, `Impact: ${decision.impact}. Action: ${decision.action}`)}
+                  onClick={() => {
+                    toast.success(`Strategy "${decision.title}" executed!`);
+                    console.log(`Executing Strategy: ${decision.title}`, `Impact: ${decision.impact}. Action: ${decision.action}`);
+                  }}
                   className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl hover:bg-blue-600 hover:text-white transition-all"
                 >
                   <ArrowRight size={18} />
