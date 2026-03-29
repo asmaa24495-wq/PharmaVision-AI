@@ -97,26 +97,6 @@ export default function App() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Auth Protection
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <Loader2 size={48} className="text-blue-600 animate-spin" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <LoginPage />;
-  }
-
-  const userProfile = {
-    name: user.displayName || 'Enterprise User',
-    title: 'Strategic Analyst',
-    email: user.email || '',
-    avatar: user.photoURL || 'https://picsum.photos/seed/strategist/200/200'
-  };
-
   const isRtl = i18n.language === 'ar';
 
   const handleSidebarClick = (tab: string) => {
@@ -248,6 +228,26 @@ Style Guidelines:
     } finally {
       setIsBubbleLoading(false);
     }
+  };
+
+  // Auth Protection - Moved after all hooks to comply with Rules of Hooks
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <Loader2 size={48} className="text-blue-600 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginPage />;
+  }
+
+  const userProfile = {
+    name: user.displayName || 'Enterprise User',
+    title: 'Strategic Analyst',
+    email: user.email || '',
+    avatar: user.photoURL || 'https://picsum.photos/seed/strategist/200/200'
   };
 
   return (
