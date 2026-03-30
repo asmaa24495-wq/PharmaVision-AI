@@ -11,7 +11,6 @@ import {
   TrendingUp,
   ShieldCheck,
   BarChart3,
-  MessageSquare,
   FileText,
   Settings,
   Building2,
@@ -20,16 +19,11 @@ import {
   Sun,
   Moon,
   Languages,
-  BrainCircuit,
   Search,
   Bot,
-  Send,
   Loader2,
-  Camera,
-  Paperclip,
   X,
-  LogOut,
-  Plus
+  LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -67,7 +61,7 @@ import InventoryManagementView from './components/InventoryManagementView';
 import { generateInventoryAlerts } from './services/alertService';
 
 import { Toaster } from 'react-hot-toast';
-import { getInventory, getDashboardStats, updateDashboardStats, addInventoryItem, getSales, addSale, getUserProfile, updateUserProfile } from './services/firestoreService';
+import { getInventory, getDashboardStats, updateDashboardStats, addInventoryItem, getSales, addSale, getUserProfile, updateUserProfile, testConnection } from './services/firestoreService';
 
 // --- Main App ---
 
@@ -76,6 +70,10 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, loading, logout } = useAuth();
+  
+  useEffect(() => {
+    testConnection();
+  }, []);
   
   // Derive activeTab from location.pathname
   const activeTab = location.pathname.split('/')[1] || 'dashboard';
@@ -108,13 +106,6 @@ export default function App() {
   const [pushEnabled, setPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(true);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const [bubbleMessages, setBubbleMessages] = useState<{ role: string; content: string; image?: string | null; action?: any }[]>([
-    { role: 'assistant', content: "مرحباً دكتور أحمد. أنا PharmaVision AI، نظام الاستخبارات الاستراتيجي الخاص بك. لقد قمت بتحليل تحركات السوق الأخيرة في القاهرة. كيف يمكنني مساعدتك في تحسين الأداء اليوم؟" }
-  ]);
-  const [bubbleInput, setBubbleInput] = useState('');
-  const [isBubbleLoading, setIsBubbleLoading] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isRtl = i18n.language === 'ar';
 
@@ -265,148 +256,6 @@ export default function App() {
     pharmacies: MOCK_PHARMACIES.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase())),
     reps: MOCK_REPS.filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()))
   } : null;
-
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setSelectedImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleBubbleSend = async () => {
-    if ((!bubbleInput.trim() && !selectedImage) || isBubbleLoading) return;
-
-    const userMsg = { 
-      role: 'user', 
-      content: bubbleInput,
-      image: selectedImage 
-    };
-    setBubbleMessages(prev => [...prev, userMsg]);
-    const currentInput = bubbleInput;
-    const currentImage = selectedImage;
-    setBubbleInput('');
-    setSelectedImage(null);
-    setIsBubbleLoading(true);
-
-    const apiKey = process.env.GEMINI_API_KEY2;
-    if (!apiKey) {
-      setIsBubbleLoading(false);
-      return;
-    }
-
-    try {
-      const ai = new GoogleGenAI({ apiKey });
-      const model = "gemini-3-flash-preview";
-      
-      let contents: any;
-      if (currentImage) {
-        const base64Data = currentImage.split(',')[1];
-        const mimeType = currentImage.split(';')[0].split(':')[1];
-        contents = {
-          parts: [
-            { text: currentInput || "Analyze this image." },
-            { inlineData: { data: base64Data, mimeType } }
-          ]
-        };
-      } else {
-        contents = currentInput;
-      }
-
-      const response = await ai.models.generateContent({
-        model,
-        contents,
-        config: {
-          systemInstruction: `You are PharmaVision AI, the Ultimate Strategic Intelligence System for the Pharmaceutical Industry. Your mission is to empower pharmaceutical companies, sales managers, and medical representatives with data-driven, actionable insights.
-
-Core Capabilities:
-1. Strategic Sales & Market Analyst: Analyze sales by product, region, time, and representative. Identify high-performers and trends. Use Markdown tables or text-based charts (e.g., █, |) for data summaries.
-2. AI Vision & OCR Expert: When analyzing medicine photos or prescriptions, ALWAYS organize the information in a Professional Clean Table or Clear Bullet Points using this EXACT structure:
-   - **Product Identity**: (Name, Manufacturer, Dosage).
-   - **Medical Purpose**: (Indications).
-   - **Usage Instructions**: (How to use).
-   - **Safety Warnings**: (Side effects & contraindications).
-3. Objection Handling & Sales Coach: Role-play with reps to handle objections (e.g., price) with strategic, persuasive rebuttals.
-4. Predictive Demand & Inventory Planner: Forecast demand, issue stock-out alerts, and recommend target areas.
-5. Competitive Sentiment Analyst: Analyze feedback to find competitor weaknesses (e.g., taste, supply issues).
-6. Rep & Pharmacy Relationship Manager: Evaluate rep efficiency and segment pharmacies (e.g., VIP like Nahdi, Al-Dawaa).
-
-Style Guidelines:
-- Professional, expert, supportive tone.
-- Arabic-language first (with technical English terms).
-- Use Markdown formatting (tables, bold text, headers) to make responses beautiful and easy to read.
-- Explain WHAT THE DATA MEANS and WHAT ACTION TO TAKE.
-
-Tool Usage:
-- If you identify a medicine that is not in the current inventory or needs restocking, use the 'addInventoryItem' tool to suggest adding it.`,
-          tools: [
-            {
-              functionDeclarations: [
-                {
-                  name: "addInventoryItem",
-                  description: "Suggest adding a new medicine to the inventory stock",
-                  parameters: {
-                    type: Type.OBJECT,
-                    properties: {
-                      name: { type: Type.STRING, description: "Name of the medicine" },
-                      currentStock: { type: Type.NUMBER, description: "Initial stock amount" },
-                      reorderPoint: { type: Type.NUMBER, description: "Reorder threshold" },
-                      reorderQuantity: { type: Type.NUMBER, description: "Quantity to order when low" }
-                    },
-                    required: ["name", "currentStock", "reorderPoint", "reorderQuantity"]
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      });
-      
-      const functionCalls = response.functionCalls;
-      if (functionCalls) {
-        for (const call of functionCalls) {
-          if (call.name === 'addInventoryItem') {
-            const args = call.args as any;
-            const confirmMsg = `I've identified ${args.name}. Would you like to add it to the stock with an initial quantity of ${args.currentStock}?`;
-            setBubbleMessages(prev => [...prev, { 
-              role: 'assistant', 
-              content: confirmMsg,
-              action: {
-                label: "Add to Stock",
-                handler: async () => {
-                  await addInventoryItem({
-                    name: args.name,
-                    currentStock: args.currentStock,
-                    reorderPoint: args.reorderPoint,
-                    reorderQuantity: args.reorderQuantity,
-                    status: args.currentStock <= args.reorderPoint ? 'Low Stock' : 'In Stock',
-                    forecastedDemand: 0,
-                    lastRestockDate: new Date().toISOString().split('T')[0],
-                    daysOfSupply: 0
-                  });
-                  setBubbleMessages(prev => [...prev, { role: 'assistant', content: `Successfully added ${args.name} to inventory.` }]);
-                }
-              }
-            } as any]);
-          }
-        }
-      }
-
-      const assistantMsg = { 
-        role: 'assistant', 
-        content: response.text || (functionCalls ? "I've suggested some inventory updates." : "I'm sorry, I couldn't process that.") 
-      };
-      setBubbleMessages(prev => [...prev, assistantMsg]);
-    } catch (error) {
-      console.error("Bubble AI Error:", error);
-      setBubbleMessages(prev => [...prev, { role: 'assistant', content: "I'm having trouble connecting. Please try again." }]);
-    } finally {
-      setIsBubbleLoading(false);
-    }
-  };
 
   // Auth Protection - Moved after all hooks to comply with Rules of Hooks
   if (loading) {
@@ -978,123 +827,6 @@ Tool Usage:
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* AI Conversational Assistant Bubble */}
-      <div className={cn("fixed bottom-8 z-50", isRtl ? "left-8" : "right-8")}>
-        <AnimatePresence>
-          {showAssistant && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className={cn(
-                "absolute bottom-20 w-80 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden",
-                isRtl ? "left-0" : "right-0"
-              )}
-            >
-              <div className="p-4 bg-blue-600 text-white flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <BrainCircuit size={20} />
-                  <span className="font-bold text-sm"><span>PharmaVision AI Assistant</span></span>
-                </div>
-                <button onClick={() => setShowAssistant(false)} className="hover:bg-white/20 p-1 rounded-lg">
-                  <ChevronRight size={18} className={cn(isRtl ? "rotate-180" : "rotate-90")} />
-                </button>
-              </div>
-              <div className="h-80 p-4 overflow-y-auto bg-slate-50 dark:bg-slate-950 space-y-4 custom-scrollbar">
-                {bubbleMessages.map((msg, i) => (
-                  <div 
-                    key={`msg-${i}`} 
-                    className={cn(
-                      "p-3 rounded-2xl shadow-sm text-xs leading-relaxed border border-slate-100 dark:border-slate-800",
-                      msg.role === 'assistant' 
-                        ? "bg-white dark:bg-slate-900 rounded-tl-none text-slate-600 dark:text-slate-300" 
-                        : "bg-blue-600 rounded-tr-none text-white ml-8"
-                    )}
-                  >
-                    {msg.image && (
-                      <div className="mb-2 rounded-lg overflow-hidden border border-white/20">
-                        <img src={msg.image} alt="Uploaded" className="max-w-full h-auto" />
-                      </div>
-                    )}
-                    <span>
-                      <Markdown>{msg.content}</Markdown>
-                    </span>
-                    {(msg as any).action && (
-                      <button
-                        onClick={(msg as any).action.handler}
-                        className="mt-3 w-full py-2 bg-emerald-600 text-white rounded-xl font-bold text-[10px] hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
-                      >
-                        <Plus size={12} />
-                        {(msg as any).action.label}
-                      </button>
-                    )}
-                  </div>
-                ))}
-                {isBubbleLoading && (
-                  <div className="flex items-center gap-2 text-[10px] text-slate-400 italic">
-                    <Loader2 size={12} className="animate-spin" />
-                    Thinking...
-                  </div>
-                )}
-              </div>
-              <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
-                {selectedImage && (
-                  <div className="mb-3 relative inline-block">
-                    <img src={selectedImage} alt="Preview" className="w-20 h-20 object-cover rounded-xl border-2 border-blue-500" />
-                    <button 
-                      onClick={() => setSelectedImage(null)}
-                      className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-lg"
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-                )}
-                <div className="relative flex items-center gap-2">
-                  <input 
-                    type="file" 
-                    ref={fileInputRef}
-                    onChange={handleImageSelect}
-                    accept="image/*"
-                    className="hidden"
-                  />
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
-                    title="Upload Image"
-                  >
-                    <Camera size={20} />
-                  </button>
-                  <div className="relative flex-1">
-                    <input 
-                      type="text" 
-                      value={bubbleInput}
-                      onChange={(e) => setBubbleInput(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleBubbleSend()}
-                      placeholder={t('askAiAnything')} 
-                      className="w-full pl-4 pr-10 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-xs focus:ring-2 focus:ring-blue-500 dark:text-white"
-                    />
-                    <button 
-                      onClick={handleBubbleSend}
-                      disabled={isBubbleLoading || (!bubbleInput.trim() && !selectedImage)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-blue-600 disabled:opacity-50"
-                    >
-                      <Send size={16} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-        
-        <button 
-          onClick={() => setShowAssistant(!showAssistant)}
-          className="w-14 h-14 bg-blue-600 text-white rounded-2xl shadow-xl shadow-blue-200 flex items-center justify-center hover:bg-blue-700 transition-all hover:scale-110 active:scale-95"
-        >
-          <MessageSquare size={24} />
-        </button>
-      </div>
     </div>
   );
-    }
+}
