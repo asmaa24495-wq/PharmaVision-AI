@@ -59,6 +59,7 @@ import CompetitorsView from './components/CompetitorsView';
 import SimulationsView from './components/SimulationsView';
 import InventoryManagementView from './components/InventoryManagementView';
 import { generateInventoryAlerts } from './services/alertService';
+import { exportAnalysisToPDF } from './lib/exportUtils';
 
 import { Toaster } from 'react-hot-toast';
 import { getInventory, getDashboardStats, updateDashboardStats, addInventoryItem, getSales, addSale, getUserProfile, updateUserProfile, testConnection } from './services/firestoreService';
@@ -505,7 +506,7 @@ export default function App() {
                   <Activity size={16} /> {simulationMode ? t('exitSimulation') : t('predictiveSimulation')}
                 </button>
                 <button 
-                  onClick={() => console.log("Exporting Strategic Intelligence")}
+                  onClick={() => exportAnalysisToPDF(analysis, 'pharma_strategic_intelligence', t('exportIntel'))}
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95"
                 >
                   <FileText size={16} /> {t('exportIntel')}
