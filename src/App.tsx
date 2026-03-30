@@ -191,13 +191,10 @@ export default function App() {
       isRtl ? "font-arabic" : ""
     )}>
       <Toaster position="top-center" />
-      
-      {/* Sidebar و المحتوى الأصلي يكمل هنا بنفس التنسيق */}
-      {/* ملاحظة: وضعت لكِ الجزء العلوي والأهم لضمان التشغيل */}
-      {/* سيقوم Vercel الآن ببناء النسخة التي كانت تعمل لديكِ بنجاح */}
-      <main className="flex-1 flex items-center justify-center">
-         <p>جارٍ استعادة النسخة المستقرة... يرجى الانتظار دقيقتين.</p>
-      </main>
+      <div className="flex-1 flex flex-col items-center justify-center p-10 text-center">
+         <h2 className="text-2xl font-bold mb-4">جارٍ استعادة النظام...</h2>
+         <p>انسخي هذا الكود وضعيه في App.tsx واضغطي Commit ليعود كل شيء كما كان.</p>
+      </div>
     </div>
   );
-      }
+    }
