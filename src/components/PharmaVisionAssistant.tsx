@@ -68,7 +68,7 @@ const PharmaVisionAssistant = () => {
     setSelectedImage(null);
     setIsLoading(true);
 
-    const apiKey = process.env.GEMINI_API_KEY2;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       console.error("Gemini API Key is missing");
       setIsLoading(false);
@@ -80,6 +80,8 @@ const PharmaVisionAssistant = () => {
       const model = "gemini-3-flash-preview";
       
       const context = `
+        أنت صيدلي خبير، استخرج الأدوية والجرعات من هذه الروشتة بوضوح.
+
         You are PharmaVision AI, the Ultimate Strategic Intelligence System for the Pharmaceutical Industry. 
         Your mission is to empower pharmaceutical companies, sales managers, and medical representatives with data-driven, actionable insights.
 
