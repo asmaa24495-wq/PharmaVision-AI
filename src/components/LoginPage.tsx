@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Activity, Loader2, ShieldCheck, Mail, Lock, User as UserIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider, facebookProvider } from '../lib/firebase';
 
 const LoginPage: React.FC = () => {
-  const { signInWithGoogle, signInWithFacebook, signInWithEmail, signUpWithEmail } = useAuth();
+  const { signInWithEmail, signUpWithEmail } = useAuth();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSignUp, setIsSignUp] = useState(false);
@@ -18,7 +20,7 @@ const LoginPage: React.FC = () => {
     setIsLoggingIn(true);
     setError(null);
     try {
-      await signInWithGoogle();
+      await signInWithPopup(auth, googleProvider);
     } catch (err: any) {
       if (err.code !== 'auth/popup-closed-by-user') {
         setError(err.message || "Failed to sign in with Google.");
@@ -32,7 +34,7 @@ const LoginPage: React.FC = () => {
     setIsLoggingIn(true);
     setError(null);
     try {
-      await signInWithFacebook();
+      await signInWithPopup(auth, facebookProvider);
     } catch (err: any) {
       if (err.code !== 'auth/popup-closed-by-user') {
         setError(err.message || "Failed to sign in with Facebook.");
