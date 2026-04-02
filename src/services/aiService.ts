@@ -30,7 +30,7 @@ Core Capabilities:
 
 Style Guidelines:
 - Professional, expert, supportive tone.
-- Arabic-language first (with technical English terms).
+- English-language only.
 - Use clear headings, bullet points, and actionable summaries.
 - Explain WHAT THE DATA MEANS and WHAT ACTION TO TAKE.
 
@@ -82,25 +82,25 @@ When receiving market data:
   } catch (error) {
     console.error("AI Analysis Error:", error);
     return {
-      overview: "تحليل أولي للسوق بناءً على البيانات المتوفرة. يظهر السوق نمواً مستقراً في قطاع المسكنات مع تحديات في سلاسل توريد المضادات الحيوية.",
+      overview: "Preliminary market analysis based on available data. The market shows stable growth in the analgesics sector with challenges in antibiotic supply chains.",
       insights: [
-        "نمو قوي بنسبة 12% في منطقة الرياض المركزية.",
-        "أداء متميز لمنتج Lipitor 20mg كأعلى مبيعات.",
-        "زيادة ملحوظة في الطلب على Ventolin بنسبة 22%."
+        "Strong 12% growth in the Central Riyadh region.",
+        "Outstanding performance for Lipitor 20mg as the top-selling product.",
+        "Significant 22% increase in demand for Ventolin."
       ],
       issues: [
-        "نقص حاد في مخزون Amoxicillin (120 وحدة فقط).",
-        "تراجع نمو مبيعات المضادات الحيوية بنسبة 5%."
+        "Critical stock shortage of Amoxicillin (only 120 units remaining).",
+        "5% decline in antibiotic sales growth."
       ],
       opportunities: [
-        "فرصة توسع في المنطقة الجنوبية (أبها) نظراً لقلة المنافسة.",
-        "إطلاق حملة ترويجية لـ Nexium في جدة لرفع المبيعات الضعيفة.",
-        "تحسين توزيع Ventolin في المناطق ذات الرطوبة العالية."
+        "Expansion opportunity in the Southern region (Abha) due to low competition.",
+        "Launch promotional campaign for Nexium in Jeddah to boost weak sales.",
+        "Optimize Ventolin distribution in high-humidity areas."
       ],
       recommendations: [
-        "إعادة جدولة توريد Amoxicillin فوراً.",
-        "نقل فائض المخزون من المناطق ذات الطلب المنخفض إلى الرياض.",
-        "تكريم المندوبة سارة العتيبي وتعميم استراتيجيتها في جدة."
+        "Reschedule Amoxicillin supply immediately.",
+        "Transfer surplus stock from low-demand areas to Riyadh.",
+        "Recognize rep Sara Al-Otaibi and implement her Jeddah strategy nationwide."
       ]
     };
   }

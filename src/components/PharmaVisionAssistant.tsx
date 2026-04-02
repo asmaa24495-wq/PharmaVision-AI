@@ -18,12 +18,44 @@ interface Message {
   };
 }
 
+const CONTENT = {
+  en: {
+    title: "PharmaVision AI Assistant",
+    status: "Neural Core Online",
+    welcome: "Welcome! I am PharmaVision AI, the integrated strategic intelligence system for the pharmaceutical sector. I have analyzed sales data, field team performance, and current market trends. How can I help you maximize profits and optimize performance today?",
+    placeholder: "Ask about sales, reps, or market trends...",
+    suggestions: [
+      "How can I increase sales in Alexandria?",
+      "Which representative needs coaching?",
+      "Analyze competitor PharmaCorp's growth.",
+      "Predict Q2 demand for Product A."
+    ],
+    analyzing: "Analyzing market data...",
+    addToStock: "Add to Stock",
+    addedToStock: (name: string) => `Successfully added ${name} to inventory.`,
+    confirmAdd: (name: string, amount: number) => `I've identified ${name}. Would you like to add it to the stock with an initial quantity of ${amount}?`,
+    uploadImage: "Upload Image",
+    resetChat: "Reset Chat",
+    error: "I'm experiencing a temporary connection issue with my neural core. Please try again in a moment.",
+    user: "User",
+    assistant: "Assistant",
+    neuralCore: "Neural Core",
+    insights: "Strategic Insights",
+    criticalIssues: "Critical Issues",
+    inventoryUpdateSuggested: "I've suggested some inventory updates.",
+    couldNotProcess: "I'm sorry, I couldn't process that request.",
+    analyzeImage: "Analyze this image."
+  }
+};
+
 const PharmaVisionAssistant = () => {
+  const dict = CONTENT.en;
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       role: 'assistant',
-      content: "مرحباً بك! أنا PharmaVision AI، نظام الاستخبارات الاستراتيجي المتكامل لقطاع الأدوية. لقد قمت بتحليل بيانات المبيعات، أداء الفريق الميداني، واتجاهات السوق الحالية. كيف يمكنني مساعدتك في تعظيم الأرباح وتحسين الأداء اليوم؟",
+      content: dict.welcome,
       timestamp: new Date()
     }
   ]);
@@ -80,8 +112,6 @@ const PharmaVisionAssistant = () => {
       const model = "gemini-3-flash-preview";
       
       const context = `
-        أنت صيدلي خبير، استخرج الأدوية والجرعات من هذه الروشتة بوضوح.
-
         You are PharmaVision AI, the Ultimate Strategic Intelligence System for the Pharmaceutical Industry. 
         Your mission is to empower pharmaceutical companies, sales managers, and medical representatives with data-driven, actionable insights.
 
@@ -99,7 +129,7 @@ const PharmaVisionAssistant = () => {
 
         Style Guidelines:
         - Professional, expert, supportive tone.
-        - Arabic-language first (with technical English terms).
+        - English-language first.
         - Use Markdown formatting (tables, bold text, headers) to make responses beautiful and easy to read.
         - Explain WHAT THE DATA MEANS and WHAT ACTION TO TAKE.
 
@@ -146,7 +176,7 @@ const PharmaVisionAssistant = () => {
           model,
           contents: {
             parts: [
-              { text: currentInput || "Analyze this image." },
+              { text: currentInput || dict.analyzeImage },
               { inlineData: { data: base64Data, mimeType } }
             ]
           },
@@ -165,14 +195,14 @@ const PharmaVisionAssistant = () => {
         for (const call of functionCalls) {
           if (call.name === 'addInventoryItem') {
             const args = call.args as any;
-            const confirmMsg = `I've identified ${args.name}. Would you like to add it to the stock with an initial quantity of ${args.currentStock}?`;
+            const confirmMsg = dict.confirmAdd(args.name, args.currentStock);
             setMessages(prev => [...prev, { 
               id: (Date.now() + 2).toString(),
               role: 'assistant', 
               content: confirmMsg,
               timestamp: new Date(),
               action: {
-                label: "Add to Stock",
+                label: dict.addToStock,
                 handler: async () => {
                   await addInventoryItem({
                     name: args.name,
@@ -187,7 +217,7 @@ const PharmaVisionAssistant = () => {
                   setMessages(prev => [...prev, { 
                     id: (Date.now() + 3).toString(),
                     role: 'assistant', 
-                    content: `Successfully added ${args.name} to inventory.`,
+                    content: dict.addedToStock(args.name),
                     timestamp: new Date()
                   }]);
                 }
@@ -200,7 +230,7 @@ const PharmaVisionAssistant = () => {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: response.text || (functionCalls ? "I've suggested some inventory updates." : "I'm sorry, I couldn't process that request."),
+        content: response.text || (functionCalls ? dict.inventoryUpdateSuggested : dict.couldNotProcess),
         timestamp: new Date()
       };
 
@@ -210,7 +240,7 @@ const PharmaVisionAssistant = () => {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: "I'm experiencing a temporary connection issue with my neural core. Please try again in a moment.",
+        content: dict.error,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -219,16 +249,12 @@ const PharmaVisionAssistant = () => {
     }
   };
 
-  const suggestions = [
-    "How can I increase sales in Alexandria?",
-    "Which representative needs coaching?",
-    "Analyze competitor PharmaCorp's growth.",
-    "Predict Q2 demand for Product A."
-  ];
-
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-2xl overflow-hidden relative">
-      <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[100px] rounded-full -mr-32 -mt-32" />
+    <div 
+      dir="ltr"
+      className="flex flex-col h-[calc(100vh-12rem)] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-2xl overflow-hidden relative font-sans"
+    >
+      <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[100px] rounded-full -mt-32 -mr-32" />
       
       {/* Header */}
       <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white/50 dark:bg-slate-900/50 backdrop-blur-md relative z-10">
@@ -237,10 +263,10 @@ const PharmaVisionAssistant = () => {
             <Bot size={24} />
           </div>
           <div>
-            <h3 className="font-bold text-lg dark:text-white">PharmaVision AI Assistant</h3>
+            <h3 className="font-bold text-lg dark:text-white">{dict.title}</h3>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Neural Core Online</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{dict.status}</span>
             </div>
           </div>
         </div>
@@ -250,11 +276,12 @@ const PharmaVisionAssistant = () => {
               setMessages([{
                 id: '1',
                 role: 'assistant',
-                content: "مرحباً بك! أنا PharmaVision AI، نظام الاستخبارات الاستراتيجي المتكامل لقطاع الأدوية. لقد قمت بتحليل بيانات المبيعات، أداء الفريق الميداني، واتجاهات السوق الحالية. كيف يمكنني مساعدتك في تعظيم الأرباح وتحسين الأداء اليوم؟",
+                content: dict.welcome,
                 timestamp: new Date()
               }]);
             }}
             className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
+            title={dict.resetChat}
           >
             <RefreshCw size={18} />
           </button>
@@ -283,7 +310,7 @@ const PharmaVisionAssistant = () => {
             <div className={cn(
               "p-5 rounded-3xl text-sm leading-relaxed shadow-sm",
               msg.role === 'assistant' 
-                ? "bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 border border-slate-100 dark:border-slate-800 rounded-tl-none" 
+                ? "bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 border border-slate-100 dark:border-slate-800 rounded-tl-none"
                 : "bg-blue-600 text-white rounded-tr-none"
             )}>
               {msg.image && (
@@ -319,7 +346,7 @@ const PharmaVisionAssistant = () => {
             </div>
             <div className="p-5 bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 border border-slate-100 dark:border-slate-800 rounded-3xl rounded-tl-none flex items-center gap-3">
               <Loader2 size={16} className="animate-spin text-blue-600" />
-              <span className="text-xs font-medium italic">Analyzing market data...</span>
+              <span className="text-xs font-medium italic">{dict.analyzing}</span>
             </div>
           </div>
         )}
@@ -341,7 +368,7 @@ const PharmaVisionAssistant = () => {
         
         {messages.length === 1 && !selectedImage && (
           <div className="flex flex-wrap gap-2 mb-6">
-            {suggestions.map((s, i) => (
+            {dict.suggestions.map((s, i) => (
               <button
                 key={i}
                 onClick={() => setInput(s)}
@@ -364,7 +391,7 @@ const PharmaVisionAssistant = () => {
           <button 
             onClick={() => fileInputRef.current?.click()}
             className="p-4 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-blue-600 rounded-2xl transition-all hover:bg-blue-50 dark:hover:bg-blue-900/20"
-            title="Upload Image"
+            title={dict.uploadImage}
           >
             <Camera size={24} />
           </button>
@@ -374,7 +401,7 @@ const PharmaVisionAssistant = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Ask about sales, reps, or market trends..."
+              placeholder={dict.placeholder}
               className="w-full pl-6 pr-14 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-600 dark:text-white transition-all shadow-inner"
             />
             <button 

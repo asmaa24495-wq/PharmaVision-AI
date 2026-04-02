@@ -110,7 +110,7 @@ export default function SettingsView({
   };
 
   const handleSave = async () => {
-    const loadingToast = toast.loading(isRtl ? 'جاري الحفظ...' : 'Saving changes...');
+    const loadingToast = toast.loading('Saving changes...');
     try {
       if (setUserProfile) {
         await setUserProfile(localProfile);
@@ -119,9 +119,9 @@ export default function SettingsView({
       if (setEmailEnabled) await setEmailEnabled(localEmailEnabled);
       if (setTwoFactorEnabled) await setTwoFactorEnabled(localTwoFactorEnabled);
       
-      toast.success(isRtl ? 'تم حفظ التغييرات بنجاح' : 'Settings saved successfully', { id: loadingToast });
+      toast.success('Settings saved successfully', { id: loadingToast });
     } catch (error) {
-      toast.error(isRtl ? 'حدث خطأ أثناء الحفظ' : 'Error saving settings', { id: loadingToast });
+      toast.error('Error saving settings', { id: loadingToast });
     }
   };
 
@@ -276,20 +276,9 @@ export default function SettingsView({
           </div>
         </SettingsSection>
 
-        {/* Appearance & Language */}
-        <SettingsSection title={t('languageRegion')} icon={Globe}>
+        {/* Appearance Section */}
+        <SettingsSection title={t('themeMode')} icon={Moon}>
           <div className="space-y-6">
-            <SettingItem label={t('languageRegion')}>
-              <button 
-                onClick={toggleLanguage}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
-              >
-                <Globe size={16} />
-                <span className="uppercase">{i18n.language}</span>
-                <ChevronRight size={14} className={cn("text-slate-400", isRtl ? "rotate-180" : "")} />
-              </button>
-            </SettingItem>
-
             <SettingItem label={t('themeMode')}>
               <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
                 <button 

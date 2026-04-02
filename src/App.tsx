@@ -95,8 +95,8 @@ export default function App() {
   const [userProfile, setUserProfile] = useState<UserProfile>({
     uid: '',
     email: '',
-    name: 'د. أحمد محمود',
-    title: 'مدير الاستراتيجية الإقليمي',
+    name: 'Dr. Ahmed Mahmoud',
+    title: 'Regional Strategy Director',
     avatar: 'https://picsum.photos/seed/doc/200/200',
     role: 'user',
     darkMode: false,
@@ -108,7 +108,7 @@ export default function App() {
   const [emailEnabled, setEmailEnabled] = useState(true);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
 
-  const isRtl = i18n.language === 'ar';
+  const isRtl = false;
 
   const handleSidebarClick = (tab: string) => {
     setIsSidebarOpen(false);
@@ -116,9 +116,9 @@ export default function App() {
   };
 
   useEffect(() => {
-    document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
-    document.documentElement.lang = i18n.language;
-  }, [isRtl, i18n.language]);
+    document.documentElement.dir = 'ltr';
+    document.documentElement.lang = 'en';
+  }, []);
 
   useEffect(() => {
     if (darkMode) {
@@ -196,8 +196,8 @@ export default function App() {
         const initialProfile: UserProfile = {
           uid: user.uid,
           email: user.email || '',
-          name: user.displayName || 'د. أحمد محمود',
-          title: 'مدير الاستراتيجية الإقليمي',
+          name: user.displayName || 'Dr. Ahmed Mahmoud',
+          title: 'Regional Strategy Director',
           avatar: user.photoURL || 'https://picsum.photos/seed/doc/200/200',
           role: 'user',
           darkMode: false,
@@ -418,13 +418,6 @@ export default function App() {
                 title={t('themeMode')}
               >
                 {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-              </button>
-              <button 
-                onClick={toggleLanguage}
-                className="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-1"
-              >
-                <Languages size={20} />
-                <span className="text-xs font-bold uppercase">{i18n.language}</span>
               </button>
             </div>
             
